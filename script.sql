@@ -1,26 +1,19 @@
--- TP BASES DE DONNEES AVANCEES POUR LES BIOLOGISTES
--- Janvier-Février 2016
--- Victor Gaborit & Clara Jégousse
+--TP BASES DE DONNEES AVANCEES POUR LES BIOLOGISTES
+-- 26 Janvier 2016
+-- Clara Jegousse/Victor Gaborit
 -- Master 2 Bioinformatique
--- Username: M2_BIO12@cienetdb
--- Password: m2db
 
--- I) Langage de définition de données
+--I) Langage de définition de données
+--*) Supression des tables
 
--- Suppression des tables (dans l'ordre pour ne pas avoir de problème avec les keys) :
-DROP TABLE DetailsEmprunts; -- DROP TABLE Details;
+DROP TABLE Details;
 DROP TABLE Emprunts;
 DROP TABLE Membres;
 DROP TABLE Exemplaires;
 DROP TABLE Ouvrages;
 DROP TABLE Genres;
 
-DROP SEQUENCE seq_membre;
-
--- Pour visualiser les tables :
-SELECT table_name FROM user_tables;
-
--- 1) Mise en place des tables en utilisant la syntaxe SQL Oracle
+--1) Mise en place des tables en utilisant la syntaxe SQL Oracle
 CREATE TABLE Genres (
 code CHAR(5) CONSTRAINT pk_genres PRIMARY KEY,
 libelle VARCHAR2(80) NOT NULL);
@@ -60,18 +53,15 @@ emprunt NUMBER(10) CONSTRAINT fk_details_emprunts REFERENCES Emprunts(numero),
 numero NUMBER(3),
 isbn NUMBER(10),
 exemplaire NUMBER(3),
-rendule date,
+rendule DATE,
 CONSTRAINT pk_detailsemprunts PRIMARY KEY (emprunt, numero),
 CONSTRAINT fk_detailsemprunts_exemplaires FOREIGN KEY (isbn, exemplaire) REFERENCES
 Exemplaires(isbn, numero));
 
--- Pour verifier que les tables ont bien été créé :
-SELECT table_name FROM user_tables;
-
--- 2) Définissez une séquence afin de faciliter la mise en place d’un numéro pour chaque membre. La séquence doit commencer avec la valeur 1 et elle possédera un pas d’incrément de 1.
+--2)
 CREATE SEQUENCE seq_membre START WITH 0 INCREMENT BY 1 MINVALUE 0;
 
--- 3) Définissez une contrainte d’intégrité afin de satisfaire cette nouvelle exigence. La contrainte sera ajoutée sur la table des membres par l’intermédiaire de l’instruction « alter table ».
+--3) 
 ALTER TABLE Membres ADD CONSTRAINT uq_membres unique (nom, prenom, telephone);
 
 --4)
@@ -364,52 +354,48 @@ FROM Ouvrages, Genres
 WHERE Genres.code=Ouvrages.genre
 ORDER BY Genres.libelle, Ouvrages.titre;
 
---III) SQL avancé
+--III)SQL avancé
 
---1) Etablissez le nombre d’emprunts par ouvrage et par exemplaire. Utilisez l’opérateur ROLLUP pour effectuer le calcul d’agrégat sur les critères de regroupement plus généraux. Utilisez la fonction DECODE pour présenter le résultat de façon plus lisible.
-SELECT isbn, exemplaire, count(*) AS nombre
+--1)
+
+SELECT isbn,exemplaire,count(*) AS nombre
 FROM Details
 GROUP BY ROLLUP(isbn, exemplaire);
-
 --solution plus lisible
-SELECT isbn,
-DECODE (GROUPING (exemplaire), 1, 'Tous exemplaires confondus', exemplaire) AS exemplaire,
-COUNT(*) AS Nombre
+SELECT isbn, DECODE(GROUPING(exemplaire), 1, 'Tous exemplaires confondus', exemplaire) AS exemplaire, COUNT(*) AS nombre
 FROM Details
---Rollup pour grouper selon plusieurs éléments
 GROUP BY ROLLUP(isbn, exemplaire);
 
---2) Etablissez la liste des exemplaires qui n’ont jamais été empruntés au cours des trois derniers mois. Pour effectuer les calculs sur les trois derniers mois, c’est la date de retour de l’exemplaire qui est prise en compte.
+--2)
 SELECT *
 FROM Exemplaires E
 WHERE NOT EXISTS (
 	SELECT *
 	FROM Details D
-	WHERE MONTHS_BETWEEN (rendule, sysdate) < 3
+	WHERE MONTHS_BETWEEN(rendule, sysdate) < 3
 	AND D.isbn=E.isbn
-	AND D.exemplaire=E.numero);
+	AND D.exemplaire=E.numero); 
 
---3) Etablissez la liste des ouvrages pour lesquels il n’existe pas d’exemplaires à l’état neuf.
+--3)
 SELECT *
-FROM Ouvrages
+FROM Ouvrages 
 WHERE isbn NOT IN (
 	SELECT isbn
 	FROM Exemplaires
-	WHERE etat='NE');
+	WHERE etat='NE'); 
 
---4) Extrayez tous les titres qui contiennent le mot «mer» quelque soit sa place dans le titre et la casse avec laquelle il est renseigné.
+--4)
 SELECT isbn, titre
-FROM Ouvrages
+FROM Ouvrages 
 WHERE LOWER (titre) LIKE '%mer%';
 
---5) Ecrivez une requête qui permet de connaître tous les auteurs dont le nom possède la particule « de ».
-SELECT DISTINCT auteur 
+--5)
+SELECT DISTINCT auteur
 FROM Ouvrages
---Utilisation d'une expression régulière
--- WHERE REGEXP_LIKE (auteur, '^[[:alpha]]*[[:space]]de[[:space]][[:alpha]]+$');
+--WHERE REGEXP_LIKE(auteur, '^[[:alpha:]]*[[:space:]]de[[:space:]][[:alpha:]]+$'); ==> Ne ressort qu'un seul nom sur les deux attendus
 WHERE auteur LIKE '% de %';
 
---6) A partir des genres des livres, affichez le public de chaque ouvrage en vous appuyant sur la table des correspondances ci-dessous. L’objectif est de connaître pour chaque titre le public susceptible de lire l’ouvrage. L’instruction CASE peut s’avérer utile pour aboutir rapidement à un tel résultat.
+--6)
 SELECT isbn, titre, CASE genre
 WHEN 'BD' THEN 'Jeunesse'
 WHEN 'INF' THEN 'Professionnel'
@@ -417,47 +403,43 @@ WHEN 'POL' THEN 'Adulte'
 WHEN 'REC' THEN 'Tous'
 WHEN 'ROM' THEN 'Tous'
 WHEN 'THE' THEN 'Tous'
-END AS "Public" -- double quote obligatoire !
+END AS "Public"
 FROM Ouvrages;
 
---7) Pour l’instant, l’objectif de chaque table semble évident. Mais d’ici quelque temps ce ne sera peut-être plus le cas. Aussi est-il judicieux d’associer un commentaire à chaque table, voire à chaque colonne.
+--7)
 COMMENT ON TABLE Membres
-IS 'Descriptifs des membres. Possède le synonyme Abonnés';
+IS 'Descriptifs des membres. Possède le synonymes Abonnes';
 COMMENT ON TABLE Genres
-IS 'Definition des genres possibles des ouvrages';
+IS 'Descriptifs des genres possibles des ouvrages';
 COMMENT ON TABLE Ouvrages
-IS 'Description des ouvrages references par la bibliotheque';
+IS 'Descriptifs des ouvrages référencés par la bibliothèque';
 COMMENT ON TABLE Exemplaires
-IS 'Definition precise des livres presents dans la bibliotheque';
+IS 'Définition précise des livres présents dans la bibliothèque';
 COMMENT ON TABLE Emprunts
-IS 'Fiche demprunt de livres, toujours associee a un et un seul membre';
+IS 'Fiche d’emprunt de livres, toujours associée à un et un seul membre';
 COMMENT ON TABLE Details
-IS 'Chaque ligne correspond a un livre emprunte';
+IS 'Chaque ligne correspond à un livre emprunté';
 
---8) Interrogez les commentaires associés aux tables présentes dans le schéma de l’utilisateur courant. La table USER_TAB_COMMENTS du dictionnaire doit être mise à contribution.
+--8)
 SELECT table_name, comments
 FROM USER_TAB_COMMENTS
 WHERE comments IS NOT NULL;
 
---9) Lors de la création d’un nouveau membre, on souhaite enregistrer un emprunt dans la même transaction. Comment rendre possible cette nouvelle contrainte de fonctionnement ?
-ALTER TABLE Emprunts 
+--9)
+ALTER TABLE Emprunts
 DROP CONSTRAINT fk_emprunts_membres;
-
-ALTER TABLE Emprunts 
-ADD CONSTRAINT fk_emprunts_membres 
-FOREIGN KEY (membre) 
-REFERENCES Membres(numero)
+ALTER TABLE Emprunts
+ADD CONSTRAINT fk_emprunts_membres FOREIGN KEY (membre) REFERENCES Membres (numero)
 INITIALLY DEFERRED;
 
---10) Supprimez la table des détails.
+--10) 
 DROP TABLE Details;
 
---11) Annulez cette suppression de table.
+--11)
 FLASHBACK TABLE Details TO BEFORE DROP;
 
---12) Question inexistante
 
---13) Les utilisateurs souhaitent une requête qui permette d’afficher un message en fonction du nombre d’exemplaires de chaque ouvrage.
+--13)
 SELECT Ouvrages.isbn, Ouvrages.titre, CASE COUNT(*)
 WHEN 0 THEN 'Aucun'
 WHEN 1 THEN 'Peu'
@@ -466,11 +448,10 @@ WHEN 3 THEN 'Normal'
 WHEN 4 THEN 'Normal'
 WHEN 5 THEN 'Normal'
 ELSE 'Beaucoup'
-END AS "Nombre exemplaires" -- double quote obligatoire
+END AS "Nombre exemplaires"
 FROM Ouvrages, Exemplaires
-WHERE Ouvrages.isbn = Exemplaires.isbn
+WHERE Ouvrages.isbn=Exemplaires.isbn
 GROUP BY Ouvrages.isbn, Ouvrages.titre;
-
 
 --IV) PL/SQL
 
@@ -1227,9 +1208,9 @@ CREATE TRIGGER after_delete_Exemplaires
 	AFTER DELETE ON Exemplaires
 	FOR EACH ROW 
 DECLARE
-	v_Nbre number(3);
+	v_nbre NUMBER(3);
 BEGIN
-	DELETE FROM Ouvrages WHERE Isbn= :old.Isbn;
+	DELETE FROM Ouvrages WHERE isbn=:old.isbn;
 EXCEPTION
 	WHEN OTHERS THEN NULL;
 END;
@@ -1240,15 +1221,15 @@ CREATE OR REPLACE TRIGGER after_insert_Emprunts
 	AFTER INSERT ON Emprunts
 	FOR EACH ROW
 DECLARE
-	v_FinValidite date;
+	v_finValidite DATE;
 BEGIN
 	-- On calcule la date de fin de validité de l'adhésion d'un membre voulant emprunter un exemplaire
 	--ADD_MONTHS(i,j) permet de calculer la date de fin en rajoutant j mois à la date i
-	SELECT ADD_MONTHS(Adhesion, Duree) INTO v_FinValidite
+	SELECT ADD_MONTHS(adhesion, duree) INTO v_finValidite
 	FROM Membres
-	WHERE Numero= :new.Membre;
+	WHERE numero=:new.membre;
 	-- On compare la date de fin de validité avec la date du jour
-	IF(v_FinValidite<sysdate) THEN
+	IF(v_finValidite<SYSDATE) THEN
 		-- On lève une exception 
 		RAISE_APPLICATION_ERROR(-20602,'Le membre n''est pas à jour, il ne peut pas emprunter d''ouvrages');
 	END IF;
@@ -1259,7 +1240,7 @@ END;
 CREATE OR REPLACE TRIGGER before_update_Emprunts
 	BEFORE UPDATE ON Emprunts
 	FOR EACH ROW
-	WHEN (new.Membre != old.Membre)
+	WHEN (new.membre != old.membre)
 BEGIN
 	-- Exécution du déclencheur si une modification sur le membre est effectuée
 	RAISE_APPLICATION_ERROR(-20603, 'Il est impossible de modifier ce membre');
@@ -1270,10 +1251,10 @@ END;
 CREATE OR REPLACE TRIGGER after_update_Details
 	AFTER UPDATE ON Details
 	FOR EACH ROW
-	WHEN ((old.Isbn != new.Isbn) OR (old.Exemplaire != new.Exemplaire))
+	WHEN ((old.isbn != new.isbn) OR (old.exemplaire != new.exemplaire))
 BEGIN
 	-- On regarde si l'ancien ISBN est différent du nouveau ou pas
-	IF ( :old.Isbn != :new.Isbn) THEN
+	IF ( :old.isbn != :new.isbn) THEN
 		RAISE_APPLICATION_ERROR(-20641, 'Il est impossible de changer d''ouvrage');
 	ELSE
 		RAISE_APPLICATION_ERROR(-20642, 'Il est impossible de changer d''exemplaire');
@@ -1283,19 +1264,19 @@ END;
 
 --5)
 CREATE OR REPLACE TRIGGER bef_ins_update_Exemplaires
-	BEFORE INSERT OR UPDATE OF NombreEmprunts ON Exemplaires
+	BEFORE INSERT OR UPDATE OF nombreEmprunts ON Exemplaires
 	FOR EACH ROW
 BEGIN
 	--On regarde le nombre d'emprunts en comptant celui là
-	IF (:new.NombreEmprunts<=10) THEN :new.Etat :='NE';
+	IF (:new.nombreEmprunts<=10) THEN :new.etat :='NE';
 	END IF;
-	IF (:new.NombreEmprunts BETWEEN 11 AND 25) THEN :new.Etat :='BO';
+	IF (:new.nombreEmprunts BETWEEN 11 AND 25) THEN :new.etat :='BO';
 	END IF;
-	IF (:new.NombreEmprunts BETWEEN 26 AND 40) THEN :new.Etat :='MO';
+	IF (:new.nombreEmprunts BETWEEN 26 AND 40) THEN :new.etat :='MO';
 	END IF;
-	IF (:new.NombreEmprunts BETWEEN 41 AND 60) THEN :new.Etat :='DO';
+	IF (:new.nombreEmprunts BETWEEN 41 AND 60) THEN :new.etat :='DO';
 	END IF;
-	IF (:new.NombreEmprunts>=61) THEN :new.Etat :='MA';
+	IF (:new.nombreEmprunts>=61) THEN :new.etat :='MA';
 	END IF;
 END;
 /
@@ -1307,17 +1288,17 @@ CREATE OR REPLACE TRIGGER after_delete_Details
 DECLARE
 	-- Le pragma permet les roll back/commit si besoin.
 	PRAGMA AUTONOMOUS_TRANSACTION;
-	v_Creele Emprunts.Creele%TYPE;
-	v_DateCalculEmprunts Exemplaires.DateCalculEmprunts%TYPE;
+	v_creele Emprunts.creele%TYPE;
+	v_dateCalculEmprunts Exemplaires.dateCalculEmprunts%TYPE;
 BEGIN
 	--calcul ne concernant que les éléments les plus récents
-	SELECT Creele INTO v_Creele FROM Emprunts WHERE Numero=:old.Emprunt;
-	SELECT DateCalculEmprunts INTO v_DateCalculEmprunts FROM Exemplaires WHERE Exemplaires.Isbn=:old.Isbn AND Exemplaires.Numero=:old.Exemplaire;
-	IF(v_DateCalculEmprunts<v_Creele) THEN 
+	SELECT creele INTO v_creele FROM Emprunts WHERE numero=:old.emprunt;
+	SELECT dateCalculEmprunts INTO v_dateCalculEmprunts FROM Exemplaires WHERE Exemplaires.isbn=:old.isbn AND Exemplaires.numero=:old.exemplaire;
+	IF(v_dateCalculEmprunts<v_creele) THEN 
 		-- la valoraisation du nombre d'emprunts est antérieure à la location
 		UPDATE Exemplaires
-		SET NombreEmprunts=NombreEmprunts+1
-		WHERE Exemplaires.Isbn=:old.Isbn AND Exemplaires.Numero=:old.Exemplaire;
+		SET nombreEmprunts=nombreEmprunts+1
+		WHERE Exemplaires.isbn=:old.isbn AND Exemplaires.numero=:old.exemplaire;
 	END IF;
 	COMMIT;
 END;
@@ -1326,58 +1307,58 @@ END;
 
 --7)
 -- étape 1 : Modification de la structure des tables des Emprunts et des Details en y ajoutant une colonne pour conserver le nom de l'utilisateur et une autre pour conserver la date et l'heure de l'opération
-ALTER TABLE Emprunts ADD(AjoutePar varchar2(80), AjouteLe date);
-ALTER TABLE Details ADD(ModifiePar varchar2(80), ModifieLe date);
+ALTER TABLE Emprunts ADD(ajoutePar VARCHAR2(80), ajouteLe DATE);
+ALTER TABLE Details ADD(modifiePar VARCHAR2(80), ModifieLe DATE);
 -- étape 2a : Définition d'un déclencheur dans la table des Emprunts
 CREATE OR REPLACE TRIGGER before_insert_Emprunts
 	BEFORE INSERT ON Emprunts
 	FOR EACH ROW
 BEGIN
 	-- On récupère le nom de l'utilisateur = employé
-	:new.AjoutePar :=user();
+	:new.ajoutePar :=USER();
 	-- On récupère la date et l'heure 
-	:new.AjouteLe :=sysdate();
+	:new.ajouteLe :=SYSDATE();
 END;
 /
 -- étape 2b : Définition d'un déclencheur dans la table des Details
 CREATE OR REPLACE TRIGGER before_update_Details
-	BEFORE UPDATE ON Emprunts
+	BEFORE UPDATE ON Details
 	FOR EACH ROW
-	WHEN (old.Rendule IS NULL AND new.Rendule IS NOT NULL)
+	WHEN (old.rendule IS NULL AND new.rendule IS NOT NULL)
 BEGIN
 	-- On récupère le nom de l'utilisateur = employé
-	:new.ModifiePar :=user();
+	:new.modifiePar :=USER();
 	-- On récupère la date et l'heure 
-	:new.ModifieLe :=sysdate();
+	:new.modifieLe :=SYSDATE();
 END;
 /
 
 --8)
-CREATE OR REPLACE FUNCTION AnalyseActivite(v_Employe in char default NULL, v_Jour in date default NULL) 
-RETURN number IS
-	v_ResultatDeparts number(6) :=0;
-	v_ResultatRetours number(6) :=0;
+CREATE OR REPLACE FUNCTION AnalyseActivite(v_employe IN CHAR DEFAULT NULL, v_jour IN DATE DEFAULT NULL) 
+RETURN NUMBER IS
+	v_resultatDeparts NUMBER(6) :=0;
+	v_resultatRetours NUMBER(6) :=0;
 BEGIN
 	-- On traite le cas où l'analyse porte sur un utilisateur
-	IF(v_Employe IS NOT NULL AND v_Jour IS NULL) THEN
-		SELECT count(*) INTO v_ResultatDeparts FROM Emprunts WHERE AjoutePar=v_Employe;
-		SELECT count(*) INTO v_ResultatRetours FROM DEtails WHERE ModifiePar=v_Employe;
+	IF(v_employe IS NOT NULL AND v_jour IS NULL) THEN
+		SELECT COUNT(*) INTO v_resultatDeparts FROM Emprunts WHERE ajoutePar=v_employe;
+		SELECT COUNT(*) INTO v_resultatRetours FROM Details WHERE modifiePar=v_employe;
 		-- On retourne le résultat et on quitte la fonction
-		RETURN v_ResultatDeparts+v_ResultatRetours;
+		RETURN v_resultatDeparts+v_resultatRetours;
 	END IF;
 	-- On traite le cas où l'analyse porte sur une journée
-	IF (v_Employe IS NULL AND v_Jour IS NOT NULL) THEN 
-		SELECT count(*) INTO v_ResultatDeparts FROM Emprunts WHERE AjouteLe=v_Jour;
-		SELECT count(*) INTO v_ResultatRetours FROM DEtails WHERE ModifieLe=v_Jour;
+	IF (v_employe IS NULL AND v_jour IS NOT NULL) THEN 
+		SELECT COUNT(*) INTO v_resultatDeparts FROM Emprunts WHERE ajouteLe=v_jour;
+		SELECT COUNT(*) INTO v_resultatRetours FROM Details WHERE modifieLe=v_jour;
 		-- On retourne le résultat et on quitte la fonction
-		RETURN v_ResultatDeparts+v_ResultatRetours;	
+		RETURN v_resultatDeparts+v_resultatRetours;	
 	END IF;
 	-- On traite le cas où l'analyse porte sur un utilisateur et une journée
-	IF(v_Employe IS NOT NULL AND v_Jour IS NOT NULL) THEN
-		SELECT count(*) INTO v_ResultatDeparts FROM Emprunts WHERE AjoutePar=v_Employe AND AjouteLe=v_Jour;
-		SELECT count(*) INTO v_ResultatRetours FROM DEtails WHERE ModifiePar=v_Employe AND ModifieLe=v_Jour;
+	IF(v_employe IS NOT NULL AND v_jour IS NOT NULL) THEN
+		SELECT COUNT(*) INTO v_resultatDeparts FROM Emprunts WHERE ajoutePar=v_employe AND ajouteLe=v_jour;
+		SELECT COUNT(*) INTO v_resultatRetours FROM Details WHERE modifiePar=v_employe AND modifieLe=v_jour;
 		-- On retourne le résultat et on quitte la fonction
-		RETURN v_ResultatDeparts+v_ResultatRetours;
+		RETURN v_resultatDeparts+v_resultatRetours;
 	END IF;
 	-- POur le dernier cas restant, le retour est 0
 	RETURN 0;
@@ -1389,10 +1370,10 @@ CREATE OR REPLACE TRIGGER before_insert_Details
 	BEFORE INSERT ON Details
 	FOR EACH ROW
 DECLARE 
-	v_Etat Emprunts.Etat%TYPE;
+	v_etat Emprunts.etat%TYPE;
 BEGIN
-	SELECT Etat INTO v_Etat FROM Emprunts WHERE Numero=:new.Emprunt;
-	IF (v_Etat !='EC') THEN RAISE_APPLICATION_ERROR (-20610, 'Il est interdit d''ajouter des détails pour cet exemplaire');
+	SELECT etat INTO v_etat FROM Emprunts WHERE numero=:new.emprunt;
+	IF (v_etat !='EC') THEN RAISE_APPLICATION_ERROR (-20610, 'Il est interdit d''ajouter des détails pour cet exemplaire');
 	END IF;
 END;
 /
