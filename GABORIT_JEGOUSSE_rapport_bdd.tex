@@ -1,0 +1,154 @@
+% DOCUMENT CLASS
+\documentclass[10pt, oneside]{article}
+\usepackage{geometry}                	
+\geometry{a4paper}
+
+% SET SANS SERIF FONT
+\renewcommand{\familydefault}{\sfdefault}
+\renewcommand*\sfdefault{phv}
+
+% FONTS PACKAGES
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{courier}
+
+% SKIP LINES BETWEEN PARAGRAPHS
+\usepackage[parfill]{parskip}
+
+% COLOR SETTINGS
+\usepackage[usenames,dvipsnames]{xcolor}
+\definecolor{DarkGrey}{HTML}{A9A9A9}
+\definecolor{Red}{HTML}{DC143C}%
+
+% SET COLOR PALETTE (flattastic color palette BY erigon)
+\definecolor{grapefruit}{HTML}{ED5565}
+\definecolor{Grapefruit}{HTML}{DA4453}
+\definecolor{bittersweet}{HTML}{FC6E51}
+\definecolor{Bittersweet}{HTML}{E9573F}
+\definecolor{sunflower}{HTML}{FFCE54}
+\definecolor{Sunflower}{HTML}{F6BB42}
+\definecolor{grass}{HTML}{A0D468}
+\definecolor{Grass}{HTML}{8CC152}
+\definecolor{mint}{HTML}{48CFAD}
+\definecolor{Mint}{HTML}{37BC9B}
+\definecolor{aqua}{HTML}{4FC1E9}
+\definecolor{Aqua}{HTML}{3BAFDA}
+\definecolor{jeans}{HTML}{5D9CEC}
+\definecolor{Jeans}{HTML}{4A89DC}
+\definecolor{lavender}{HTML}{AC92EC}
+\definecolor{Lavender}{HTML}{967ADC}
+\definecolor{rose}{HTML}{EC87C0}
+\definecolor{Rose}{HTML}{D770AD}
+\definecolor{lightgrey}{HTML}{F5F7FA}
+\definecolor{LightGrey}{HTML}{E6E9ED}
+\definecolor{mediumgrey}{HTML}{CCD1D9}
+\definecolor{MediumGrey}{HTML}{AAB2BD}
+\definecolor{darkgrey}{HTML}{656D78}
+\definecolor{DarkGrey}{HTML}{434A54}
+
+% BIBLIOGRAPHY STYLE
+\bibliographystyle{ieeetr}
+
+% LINKS SETTINGS
+\usepackage{url}
+\usepackage[colorlinks = true,
+            linkcolor = black,
+            urlcolor  = Jeans,
+            citecolor = black,
+            anchorcolor = black]{hyperref}
+
+% FOOTER HEIGH
+\setlength{\footskip}{3cm}            		
+\setlength{\skip\footins}{0.5cm}
+
+% PACKAGES FOR PICTURES AND TABLES
+\usepackage{booktabs}
+\usepackage{graphicx} 
+\usepackage{caption}
+\usepackage{subcaption}
+
+% FANCY HEADER AND FOOTER
+%\usepackage{fancyhdr}
+%\pagestyle{fancy}
+%\fancyhf{}
+%\fancyhead[RE,LO]{Clara Jégousse}
+%\fancyhead[RE,CO]{}
+%\fancyhead[LE,RO]{2015}
+%\fancyfoot[LE,CO]{\thepage}
+%\renewcommand{\headrulewidth}{0.1pt}
+%\renewcommand{\footrulewidth}{0.1pt}
+
+% TO USE ALL CARACTERS OF THE KEYBOARD
+%\usepackage[latin1]{inputenc} 
+%\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+% FRENCH AND ENGLISH
+\usepackage[francais, english]{babel}
+
+% LISTING FOR CODING
+\usepackage{listings}
+\renewcommand{\lstlistingname}{File}% Listing -> Algorithm
+\renewcommand{\lstlistlistingname}{List of \lstlistingname s}% List of Listings -> List of Algorithms
+
+\lstset{%
+		extendedchars=true,
+		basicstyle=\footnotesize\ttfamily,
+		breaklines=true,
+		numbers=left, 
+		numberstyle=\tiny, 
+		stepnumber=1,
+		backgroundcolor=\color{white},
+		commentstyle=\color{MediumGrey},
+		keywordstyle=\color{Grass},
+		stringstyle=\color{Aqua}
+}
+\lstloadlanguages{R} % to use R
+
+% INFOS
+\title{Base de données}
+\author{Victor Gaborit \& Clara Jégousse}
+\date{}
+
+% BEGIN DOCUMENT
+\begin{document}
+
+\maketitle
+%\tableofcontents
+%\clearpage
+
+\section*{Introduction}
+
+\href{http://www.oracle.com}{Oracle} est un puissant Système de Gestion de Bases de Données Relationnelles (SGBDR) proposant, en plus du moteur de la base, de nombreux outils pour l'utilisation, le développement et l'administration de la base de données.
+
+Ces outils ont un language commun: le SQL.
+
+\href{http://www.oracle.com}{Oracle} permet de gérer les données d'une application en respectant une logique devenue standard, le modèle relationel. Les fondements de ce modèle ont été établis au début des années 1970, par E.F. Codd et restent une référence pour la gestion des données.
+
+La logique d'extraction des données d'une base conforme au modèle relationnel, constitue l'algèbre relationnelle. Elle permet aux utilisateurs une approche indépendante du système du système physique pour arriver à un résultat.
+
+Le SQL est un language de requêtes descriptif, standard pour toutes les bases de données qui suivent le modèle relationnel. Ce language permet toutes les opérations sur les données dans tous les cas d'utilisation de la base de données.
+
+Avec \href{http://www.oracle.com}{Oracle}, on peut enfin associer au SQL un language procédural, le PL/SQL, qui ajoute de nombreuses possibilités dans la manipulation des données.
+
+Le SGBD Oracle propose maintenant, en option, une nouvelle de gestion des informations à travers l'implémentation du modèle objet-relationnel. L'objectif de cette approche est de simplifier la modelisation des données en permettant le stockage et la manipulation de nouveaux types d'informations. 
+
+\subsection*{Identification des tables}
+
+D'après l'énoncé, il est possible d'identifier les tables \texttt{Membres}, \texttt{Ouvrages}, \texttt{Exemplaires}, \texttt{Emprunts}, \texttt{DetailsEmprunts}. On considère que la liste des genres est susceptible d'évoluer, ainsi il est nécessaire de créer une table \texttt{Genres}.
+
+\section{Language de définition de données}
+
+\lstinputlisting[language=sql, title=Question 1, label=Q1]{../TP/QI1.sql}
+
+Pour vérifier que les tables on bien été créées, on peut afficher le nom
+
+\begin{lstlisting}
+-- Pour verifier que les tables ont bien été créé :
+SELECT table_name FROM user_tables;
+\end{lstlisting}
+
+
+
+\end{document}
