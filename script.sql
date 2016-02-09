@@ -1,19 +1,26 @@
---TP BASES DE DONNEES AVANCEES POUR LES BIOLOGISTES
--- 26 Janvier 2016
--- Clara Jegousse/Victor Gaborit
+-- TP BASES DE DONNEES AVANCEES POUR LES BIOLOGISTES
+-- Janvier-Février 2016
+-- Victor Gaborit & Clara Jégousse
 -- Master 2 Bioinformatique
+-- Username: M2_BIO12@cienetdb
+-- Password: m2db
 
---I) Langage de définition de données
---*) Supression des tables
+-- I) Langage de définition de données
 
-DROP TABLE Details;
+-- Suppression des tables (dans l'ordre pour ne pas avoir de problème avec les keys) :
+DROP TABLE DetailsEmprunts; -- DROP TABLE Details;
 DROP TABLE Emprunts;
 DROP TABLE Membres;
 DROP TABLE Exemplaires;
 DROP TABLE Ouvrages;
 DROP TABLE Genres;
 
---1) Mise en place des tables en utilisant la syntaxe SQL Oracle
+DROP SEQUENCE seq_membre;
+
+-- Pour visualiser les tables :
+SELECT table_name FROM user_tables;
+
+-- 1) Mise en place des tables en utilisant la syntaxe SQL Oracle
 CREATE TABLE Genres (
 code CHAR(5) CONSTRAINT pk_genres PRIMARY KEY,
 libelle VARCHAR2(80) NOT NULL);
@@ -58,7 +65,10 @@ CONSTRAINT pk_detailsemprunts PRIMARY KEY (emprunt, numero),
 CONSTRAINT fk_detailsemprunts_exemplaires FOREIGN KEY (isbn, exemplaire) REFERENCES
 Exemplaires(isbn, numero));
 
---2)
+-- Pour verifier que les tables ont bien été créé :
+SELECT table_name FROM user_tables;
+
+-- 2)
 CREATE SEQUENCE seq_membre START WITH 0 INCREMENT BY 1 MINVALUE 0;
 
 --3) 
