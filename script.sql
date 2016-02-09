@@ -68,10 +68,10 @@ Exemplaires(isbn, numero));
 -- Pour verifier que les tables ont bien été créé :
 SELECT table_name FROM user_tables;
 
--- 2)
+-- 2) Définissez une séquence afin de faciliter la mise en place d’un numéro pour chaque membre. La séquence doit commencer avec la valeur 1 et elle possédera un pas d’incrément de 1.
 CREATE SEQUENCE seq_membre START WITH 0 INCREMENT BY 1 MINVALUE 0;
 
---3) 
+-- 3) Définissez une contrainte d’intégrité afin de satisfaire cette nouvelle exigence. La contrainte sera ajoutée sur la table des membres par l’intermédiaire de l’instruction « alter table ».
 ALTER TABLE Membres ADD CONSTRAINT uq_membres unique (nom, prenom, telephone);
 
 --4)
