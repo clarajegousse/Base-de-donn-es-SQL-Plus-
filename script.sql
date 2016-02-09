@@ -885,28 +885,28 @@ END;
 --9) Fonction AjouteMembre
 CREATE OR REPLACE FUNCTION AjouteMembre (v_nom IN CHAR, v_prenom IN CHAR, v_adresse IN CHAR, v_mobile IN CHAR, v_adhesion IN DATE, v_duree IN NUMBER) RETURN NUMBER AS v_numero Membres.numero%TYPE;
 BEGIN 
-	INSERT INTO Membres (Numero, Nom, Prenom, Adresse, Mobile, Adhesion, Duree)
-	VALUES (seq_membre.nextval, v_Nom, v_Prenom, v_Adresse, v_Mobile, v_Adhesion, v_Duree)
-	RETURNING Numero INTO v_Numero;
-	RETURN v_Numero;
+	INSERT INTO Membres (numero, nom, prenom, adresse, mobile, adhesion, duree)
+	VALUES (seq_membre.nextval, v_nom, v_prenom, v_adresse, v_mobile, v_adhesion, v_duree)
+	RETURNING numero INTO v_numero;
+	RETURN v_numero;
 END;
 /
 
 --test
 DECLARE
-	v_Numero Membres.Numero%TYPE;
+	v_numero Membres.numero%TYPE;
 
 BEGIN
-	v_Numero := AjouteMembre('Personne','Paul','4 rue du centre','06 36 65 65 65',sysdate,3);
-	DBMS_OUTPUT.PUT_LINE('Le numero du nouveau membre est le suivant : '||v_Numero);
+	v_numero := AjouteMembre('Personne','Paul','4 rue du centre','06 36 65 65 65',sysdate,3);
+	DBMS_OUTPUT.PUT_LINE('Le numero du nouveau membre est le suivant : '||v_numero);
 END;
 /
 
 --10) Procédure SupprimeExemplaire
-CREATE OR REPLACE PROCEDURE SupprimeExemplaire (v_Isbn IN number, v_Numero IN number) AS
+CREATE OR REPLACE PROCEDURE SupprimeExemplaire (v_isbn IN NUMBER, v_numero IN NUMBER) AS
 BEGIN
 	-- On supprime l'exemplaire choisi
-	DELETE FROM Exemplaires WHERE Isbn=v_Isbn AND Numero=v_Numero;
+	DELETE FROM Exemplaires WHERE isbn=v_isbn AND numero=v_numero;
 	IF (SQL%ROWCOUNT=0) THEN RAISE NO_DATA_FOUND;
 	END IF;
 EXCEPTION
@@ -916,47 +916,52 @@ END;
 /
 
 --test
- execute SupprimeExemplaire(203440861,3); 
+ EXECUTE SupprimeExemplaire(203440861,3); 
 
 --11) Procédure EmpruntExpress
 -- étape 1 : recherche de la plus grande valeur attribuée à un numéro d'emprunt
-SELECT MAX(Numero) FROM Emprunts;
+SELECT MAX(numero) FROM Emprunts;
 -- étape 2 : création d'une séquence
 CREATE SEQUENCE seq_emprunts START WITH 20;
 -- étape 3 : création de la procédure
-CREATE OR REPLACE PROCEDURE EmpruntExpress (v_Membre number, v_Isbn number, v_Exemplaire number) AS v_Emprunt Emprunts.Numero%TYPE;
+CREATE OR REPLACE PROCEDURE EmpruntExpress (v_membre NUMBER, v_isbn NUMBER, v_exemplaire NUMBER) AS v_emprunt Emprunts.numero%TYPE;
 BEGIN
-	INSERT INTO Emprunts (Numero, Membre, Creele) VALUES (seq_emprunts.nextval, v_Membre, sysdate)
-	RETURNING Numero INTO v_Emprunt;
-	INSERT INTO Details (Emprunt, Numero, Isbn, Exemplaire) VALUES (v_Emprunt, 1, v_Isbn, v_Exemplaire);
+	INSERT INTO Emprunts (numero, membre, creele) VALUES (seq_emprunts.nextval, v_membre, SYSDATE)
+	RETURNING numero INTO v_emprunt;
+	INSERT INTO Details (emprunt, numero, isbn, exemplaire) VALUES (v_emprunt, 1, v_isbn, v_exemplaire);
 END;
 /
 
 --test
-execute EmpruntExpress(11,123456789)
+EXECUTE EmpruntExpress(11,2038704015,1);
 
 --12) Création de package
 -- a) création de l'entête
 CREATE OR REPLACE PACKAGE Livre AS
-	FUNCTION AdhesionAjour(v_Numero number) RETURN boolean;
-	FUNCTION AjouteMembre(v_Nom IN char, v_Prenom IN char, v_Adresse IN char, v_Mobile IN char, v_Adhesion IN date, v_Duree IN number) RETURN number;
-	FUNCTION DureeMoyenne(v_Isbn IN number, v_Exemplaire IN number default NULL) RETURN number;
-	PROCEDURE EmpruntExpress(v_Membre number, v_Isbn number, v_Exemplaire number);
-	FUNCTION EmpruntMoyen(v_Membre IN number) RETURN number;
-	FUNCTION FinValidite(v_Numero IN number) RETURN Date;
+	FUNCTION AdhesionAjour(v_numero NUMBER) RETURN BOOLEAN;
+	FUNCTION AjouteMembre(v_nom IN CHAR, v_prenom IN CHAR, v_adresse IN CHAR, v_mobile IN CHAR, v_adhesion IN DATE, v_duree IN NUMBER) RETURN NUMBER;
+	FUNCTION DureeMoyenne(v_isbn IN NUMBER, v_exemplaire IN NUMBER DEFAULT NULL) RETURN NUMBER;
+	PROCEDURE EmpruntExpress(v_membre NUMBER, v_isbn NUMBER, v_exemplaire NUMBER);
+	FUNCTION EmpruntMoyen(v_membre IN NUMBER) RETURN NUMBER;
+	FUNCTION FinValidite(v_numero IN NUMBER) RETURN DATE;
 	PROCEDURE MajEtatExemplaire;
-	FUNCTION MesureActivite(v_Mois IN number) RETURN number;
+	FUNCTION MesureActivite(v_mois IN NUMBER) RETURN NUMBER;
 	PROCEDURE PurgeMembres;
-	PROCEDURE RetourExemplaire(v_Isbn IN number, v_Numero IN number);
-	PROCEDURE SupprimeExemplaire(v_Isbn IN number, v_Numero IN number);
+	PROCEDURE RetourExemplaire(v_isbn IN NUMBER, v_numero IN NUMBER);
+	PROCEDURE SupprimeExemplaire(v_isbn IN NUMBER, v_numero IN NUMBER);
 END Livre;
 /
+--ERROR at line 1:
+--ORA-02091: transaction rolled back
+--ORA-02291: integrity constraint (M2_BIO12.FK_EMPRUNTS_MEMBRES) violated -
+--parent key not found
+
 -- b) création du corps
 CREATE OR REPLACE PACKAGE BODY Livre AS
 --*****Fonction AdhesionAjour*****
-FUNCTION AdhesionAjour(v_Numero number) RETURN boolean AS
+FUNCTION AdhesionAjour(v_numero NUMBER) RETURN BOOLEAN AS
 BEGIN 
-	IF (FinValidite(v_Numero)>= sysdate())
+	IF (finValidite(v_numero)>= SYSDATE())
 		THEN RETURN TRUE;
 	ELSE 
 		RETURN FALSE;
@@ -964,116 +969,116 @@ BEGIN
 END;
 
 --*****Fonction AjouteMembre*****
-FUNCTION AjouteMembre (v_Nom IN char, v_Prenom IN char, v_Adresse IN char, v_Mobile IN char, v_Adhesion IN date, v_Duree IN number) RETURN number AS v_Numero Membres.Numero%TYPE;
+FUNCTION AjouteMembre (v_nom IN CHAR, v_prenom IN CHAR, v_adresse IN CHAR, v_mobile IN CHAR, v_adhesion IN DATE, v_duree IN NUMBER) RETURN NUMBER AS v_numero Membres.numero%TYPE;
 BEGIN 
-	INSERT INTO Membres (Numero, Nom, Prenom, Adresse, Mobile, Adhesion, Duree)
-	VALUES (seq_membre.nextval, v_Nom, v_Prenom, v_Adresse, v_Mobile, v_Adhesion, v_Duree)
-	RETURNING Numero INTO v_Numero;
-	RETURN v_Numero;
+	INSERT INTO Membres (numero, nom, prenom, adresse, mobile, adhesion, duree)
+	VALUES (seq_membre.nextval, v_nom, v_prenom, v_adresse, v_mobile, v_adhesion, v_duree)
+	RETURNING numero INTO v_numero;
+	RETURN v_numero;
 END;
 
 --*****Fonction DureeMoyenne*****
-FUNCTION DureeMoyenne (v_Isbn IN number, v_Exemplaire IN number default NULL) RETURN number IS v_Duree number;
+FUNCTION DureeMoyenne (v_isbn IN NUMBER, v_exemplaire IN NUMBER DEFAULT NULL) RETURN NUMBER IS v_duree NUMBER;
 BEGIN
-	IF (v_Exemplaire IS NULL) THEN
-		SELECT AVG(TRUNC(Rendule,'DD')-TRUNC(Creele,'DD')+1) INTO v_Duree
+	IF (v_exemplaire IS NULL) THEN
+		SELECT AVG(TRUNC(rendule,'DD')-TRUNC(creele,'DD')+1) INTO v_duree
 		FROM Emprunts, Details
-		WHERE Emprunts.Numero=Details.Emprunt
-		AND Details.Isbn=v_Isbn
-		AND Rendule IS NOT NULL;
+		WHERE Emprunts.numero=Details.emprunt
+		AND Details.isbn=v_isbn
+		AND rendule IS NOT NULL;
 	ELSE
-		SELECT AVG(TRUNC(Rendule,'DD')-TRUNC(Creele,'DD')+1) INTO v_Duree
+		SELECT AVG(TRUNC(rendule,'DD')-TRUNC(creele,'DD')+1) INTO v_duree
 		FROM Emprunts, Details
-		WHERE Emprunts.Numero=Details.Emprunt
-		AND Details.Exemplaire=v_Exemplaire
-		AND Rendule IS NOT NULL;
+		WHERE Emprunts.numero=Details.emprunt
+		AND Details.exemplaire=v_exemplaire
+		AND rendule IS NOT NULL;
 	END IF;
-	RETURN v_Duree;
+	RETURN v_duree;
 END;
 
 --*****Fonction EmpruntExpress*****
-PROCEDURE EmpruntExpress (v_Membre number, v_Isbn number, v_Exemplaire number) AS v_Emprunt Emprunts.Numero%TYPE;
+PROCEDURE EmpruntExpress (v_membre NUMBER, v_isbn NUMBER, v_exemplaire NUMBER) AS v_emprunt Emprunts.numero%TYPE;
 BEGIN
-	INSERT INTO Emprunts (Numero, Membre, Creele) VALUES (seq_emprunts.nextval, v_Membre, sysdate)
-	RETURNING Numero INTO v_Emprunt;
-	INSERT INTO Details (Emprunt, Numero, Isbn, Exemplaire) VALUES (v_Emprunt, 1, v_Isbn, v_Exemplaire);
+	INSERT INTO Emprunts (numero, membre, creele) VALUES (seq_emprunts.nextval, v_membre, SYSDATE)
+	RETURNING numero INTO v_emprunt;
+	INSERT INTO Details (emprunt, numero, isbn, exemplaire) VALUES (v_emprunt, 1, v_isbn, v_exemplaire);
 END;
 
 --*****Fonction EmpruntMoyen*****
-FUNCTION EmpruntMoyen (v_Membre IN number) RETURN number IS v_DureeMoyenne number;
+FUNCTION EmpruntMoyen (v_membre IN NUMBER) RETURN NUMBER IS v_dureeMoyenne NUMBER;
 BEGIN 
-	SELECT TRUNC(AVG(TRUNC(Rendule,'DD')-TRUNC(Creele,'DD')+1), 2) INTO v_DureeMoyenne
+	SELECT TRUNC(AVG(TRUNC(rendule,'DD')-TRUNC(creele,'DD')+1), 2) INTO v_dureeMoyenne
 	FROM Emprunts, Details
-	WHERE Emprunts.Membre=v_Membre
-	AND Details.Emprunt=Emprunts.Numero
-	AND Details.Rendule IS NOT NULL;
-	RETURN v_DureeMoyenne;
+	WHERE Emprunts.membre=v_membre
+	AND Details.emprunt=Emprunts.numero
+	AND Details.rendule IS NOT NULL;
+	RETURN v_dureeMoyenne;
 END;
 
 --*****Fonction FinValidite*****
-FUNCTION FinValidite(v_Numero IN number) RETURN Date IS v_fin date;
+FUNCTION FinValidite(v_numero IN NUMBER) RETURN DATE IS v_fin DATE;
 BEGIN
-	SELECT ADD_MONTHS(Adhesion, Duree) INTO v_fin
+	SELECT ADD_MONTHS(adhesion, duree) INTO v_fin
 	FROM Membres
-	WHERE Numero=v_Numero;
+	WHERE numero=v_numero;
 	RETURN v_fin;
 END;
 
 --*****Fonction MajEtatExemplaire*****
 PROCEDURE MajEtatExemplaire IS 
 	CURSOR c_Exemplaires IS SELECT * FROM Exemplaires
-		FOR UPDATE OF NombreEmprunts, DateCalculEmprunts;
-	v_Nbre Exemplaires.NombreEmprunts%TYPE;
+		FOR UPDATE OF nombreEmprunts, dateCalculEmprunts;
+	v_nbre Exemplaires.nombreEmprunts%TYPE;
 BEGIN 
 	-- On parcoure d'abord l'ensemble des Exemplaires
-	FOR v_Exemplaire IN c_Exemplaires LOOP
+	FOR v_exemplaire IN c_Exemplaires LOOP
 		-- On calcule le nombre d'emprunts
-		SELECT count(*) INTO v_Nbre
+		SELECT COUNT(*) INTO v_nbre
 		FROM Details, Emprunts
-		WHERE Details.Emprunt=Emprunts.Numero
-		AND Isbn=v_Exemplaire.Isbn
-		AND Exemplaire=v_Exemplaire.Numero
-		AND Creele >= v_Exemplaire.DateCalculEmprunts;
+		WHERE Details.emprunt=Emprunts.numero
+		AND isbn=v_exemplaire.isbn
+		AND exemplaire=v_exemplaire.numero
+		AND creele >= v_exemplaire.dateCalculEmprunts;
 		-- On met à jour les informations concernant les exemplaires
 		UPDATE Exemplaires SET
-		NombreEmprunts=NombreEmprunts+v_Nbre, DateCalculEmprunts=sysdate
+		nombreEmprunts=nombreEmprunts+v_nbre, dateCalculEmprunts=SYSDATE
 		WHERE CURRENT OF c_Exemplaires;
 		-- On met à jour l'état des exemplaires
-		UPDATE Exemplaires SET Etat='NE' WHERE NombreEmprunts <= 10;
-		UPDATE Exemplaires SET Etat='BO' WHERE NombreEmprunts BETWEEN 11 AND 25;
-		UPDATE Exemplaires SET Etat='MO' WHERE NombreEmprunts BETWEEN 26 AND 40;
-		UPDATE Exemplaires SET Etat='DO' WHERE NombreEmprunts BETWEEN 41 AND 60;
-		UPDATE Exemplaires SET Etat='MA' WHERE NombreEmprunts >= 61;
+		UPDATE Exemplaires SET etat='NE' WHERE nombreEmprunts <= 10;
+		UPDATE Exemplaires SET etat='BO' WHERE nombreEmprunts BETWEEN 11 AND 25;
+		UPDATE Exemplaires SET etat='MO' WHERE nombreEmprunts BETWEEN 26 AND 40;
+		UPDATE Exemplaires SET etat='DO' WHERE nombreEmprunts BETWEEN 41 AND 60;
+		UPDATE Exemplaires SET etat='MA' WHERE nombreEmprunts >= 61;
 		-- POur finir on valide les modifications
 		COMMIT;
 	END LOOP;
 END;
 
 --*****Fonction MesureActivite*****
-FUNCTION MesureActivite (v_Mois IN number) RETURN number IS
-CURSOR c_Activite(v_M IN number) IS
-	SELECT Membre, count(*)
+FUNCTION MesureActivite (v_mois IN NUMBER) RETURN NUMBER IS
+CURSOR c_activite(v_m IN NUMBER) IS
+	SELECT membre, COUNT(*)
 	FROM Emprunts, Details
-	WHERE Details.Emprunt=Emprunts.Numero
-	AND MONTHS_BETWEEN(sysdate, Creele) <v_M
-	GROUP BY Membre
+	WHERE Details.emprunt=Emprunts.numero
+	AND MONTHS_BETWEEN(SYSDATE, creele) <v_m
+	GROUP BY membre
 	ORDER BY 2 DESC;
-v_Membre c_Activite%ROWTYPE;
+v_membre c_activite%ROWTYPE;
 
 BEGIN
-	OPEN c_Activite(v_Mois);
-	FETCH c_Activite INTO v_Membre;
-	CLOSE c_Activite;
-	RETURN v_Membre.Membre;
+	OPEN c_activite(v_mois);
+	FETCH c_activite INTO v_membre;
+	CLOSE c_activite;
+	RETURN v_membre.membre;
 END;
 
 --*****Fonction PurgeMembres*****
 PROCEDURE PurgeMembres AS
-CURSOR c_Membres IS SELECT Numero FROM Membres WHERE (TRUNC(sysdate(), 'YYYY') - TRUNC(ADD_MONTHS(Adhesion, Duree), 'YYYY'))>3;
+CURSOR c_Membres IS SELECT numero FROM Membres WHERE (TRUNC(SYSDATE(), 'YYYY') - TRUNC(ADD_MONTHS(adhesion, duree), 'YYYY'))>3;
 BEGIN 
-	FOR v_Numero IN c_Membres LOOP
+	FOR v_numero IN c_Membres LOOP
 		BEGIN
-			DELETE FROM Membres WHERE Numero=v_Numero.Numero;
+			DELETE FROM Membres WHERE numero=v_numero.numero;
 			-- On valide ensuite la transaction avec un commit
 			COMMIT;
 		EXCEPTION	
@@ -1083,18 +1088,18 @@ BEGIN
 END;
 
 --*****Fonction RetourExemplaire*****
-PROCEDURE RetourExemplaire (v_Isbn IN number, v_Numero IN number) AS
+PROCEDURE RetourExemplaire (v_isbn IN NUMBER, v_numero IN NUMBER) AS
 BEGIN
-	UPDATE Details SET Rendule=sysdate
-	WHERE Rendule IS NULL
-	AND Isbn=v_Isbn AND Exemplaire=v_Numero;
+	UPDATE Details SET rendule=SYSDATE
+	WHERE rendule IS NULL
+	AND isbn=v_isbn AND exemplaire=v_numero;
 END;
 
 --*****Fonction SupprimeExemplaire*****
-PROCEDURE SupprimeExemplaire (v_Isbn IN number, v_Numero IN number) AS
+PROCEDURE SupprimeExemplaire (v_isbn IN NUMBER, v_numero IN NUMBER) AS
 BEGIN
 	-- On supprime l'exemplaire choisi
-	DELETE FROM Exemplaires WHERE Isbn=v_Isbn AND Numero=v_Numero;
+	DELETE FROM Exemplaires WHERE isbn=v_isbn AND numero=v_numero;
 	IF (SQL%ROWCOUNT=0) THEN RAISE NO_DATA_FOUND;
 	END IF;
 EXCEPTION
