@@ -364,6 +364,114 @@ FROM Ouvrages, Genres
 WHERE Genres.code=Ouvrages.genre
 ORDER BY Genres.libelle, Ouvrages.titre;
 
+--III) SQL avancé
+
+--1) Etablissez le nombre d’emprunts par ouvrage et par exemplaire. Utilisez l’opérateur ROLLUP pour effectuer le calcul d’agrégat sur les critères de regroupement plus généraux. Utilisez la fonction DECODE pour présenter le résultat de façon plus lisible.
+SELECT isbn, exemplaire, count(*) AS nombre
+FROM Details
+GROUP BY ROLLUP(isbn, exemplaire);
+
+--solution plus lisible
+SELECT isbn,
+DECODE (GROUPING (exemplaire), 1, 'Tous exemplaires confondus', exemplaire) AS exemplaire,
+COUNT(*) AS Nombre
+FROM Details
+--Rollup pour grouper selon plusieurs éléments
+GROUP BY ROLLUP(isbn, exemplaire);
+
+--2) Etablissez la liste des exemplaires qui n’ont jamais été empruntés au cours des trois derniers mois. Pour effectuer les calculs sur les trois derniers mois, c’est la date de retour de l’exemplaire qui est prise en compte.
+SELECT *
+FROM Exemplaires E
+WHERE NOT EXISTS (
+	SELECT *
+	FROM Details D
+	WHERE MONTHS_BETWEEN (rendule, sysdate) < 3
+	AND D.isbn=E.isbn
+	AND D.exemplaire=E.numero);
+
+--3) Etablissez la liste des ouvrages pour lesquels il n’existe pas d’exemplaires à l’état neuf.
+SELECT *
+FROM Ouvrages
+WHERE isbn NOT IN (
+	SELECT isbn
+	FROM Exemplaires
+	WHERE etat='NE');
+
+--4) Extrayez tous les titres qui contiennent le mot «mer» quelque soit sa place dans le titre et la casse avec laquelle il est renseigné.
+SELECT isbn, titre
+FROM Ouvrages
+WHERE LOWER (titre) LIKE '%mer%';
+
+--5) Ecrivez une requête qui permet de connaître tous les auteurs dont le nom possède la particule « de ».
+SELECT DISTINCT auteur 
+FROM Ouvrages
+--Utilisation d'une expression régulière
+-- WHERE REGEXP_LIKE (auteur, '^[[:alpha]]*[[:space]]de[[:space]][[:alpha]]+$');
+WHERE auteur LIKE '% de %';
+
+--6) A partir des genres des livres, affichez le public de chaque ouvrage en vous appuyant sur la table des correspondances ci-dessous. L’objectif est de connaître pour chaque titre le public susceptible de lire l’ouvrage. L’instruction CASE peut s’avérer utile pour aboutir rapidement à un tel résultat.
+SELECT isbn, titre, CASE genre
+WHEN 'BD' THEN 'Jeunesse'
+WHEN 'INF' THEN 'Professionnel'
+WHEN 'POL' THEN 'Adulte'
+WHEN 'REC' THEN 'Tous'
+WHEN 'ROM' THEN 'Tous'
+WHEN 'THE' THEN 'Tous'
+END AS "Public" -- double quote obligatoire !
+FROM Ouvrages;
+
+--7) Pour l’instant, l’objectif de chaque table semble évident. Mais d’ici quelque temps ce ne sera peut-être plus le cas. Aussi est-il judicieux d’associer un commentaire à chaque table, voire à chaque colonne.
+COMMENT ON TABLE Membres
+IS 'Descriptifs des membres. Possède le synonyme Abonnés';
+COMMENT ON TABLE Genres
+IS 'Definition des genres possibles des ouvrages';
+COMMENT ON TABLE Ouvrages
+IS 'Description des ouvrages references par la bibliotheque';
+COMMENT ON TABLE Exemplaires
+IS 'Definition precise des livres presents dans la bibliotheque';
+COMMENT ON TABLE Emprunts
+IS 'Fiche demprunt de livres, toujours associee a un et un seul membre';
+COMMENT ON TABLE Details
+IS 'Chaque ligne correspond a un livre emprunte';
+
+--8) Interrogez les commentaires associés aux tables présentes dans le schéma de l’utilisateur courant. La table USER_TAB_COMMENTS du dictionnaire doit être mise à contribution.
+SELECT table_name, comments
+FROM USER_TAB_COMMENTS
+WHERE comments IS NOT NULL;
+
+--9) Lors de la création d’un nouveau membre, on souhaite enregistrer un emprunt dans la même transaction. Comment rendre possible cette nouvelle contrainte de fonctionnement ?
+ALTER TABLE Emprunts 
+DROP CONSTRAINT fk_emprunts_membres;
+
+ALTER TABLE Emprunts 
+ADD CONSTRAINT fk_emprunts_membres 
+FOREIGN KEY (membre) 
+REFERENCES Membres(numero)
+INITIALLY DEFERRED;
+
+--10) Supprimez la table des détails.
+DROP TABLE Details;
+
+--11) Annulez cette suppression de table.
+FLASHBACK TABLE Details TO BEFORE DROP;
+
+--12) Question inexistante
+
+--13) Les utilisateurs souhaitent une requête qui permette d’afficher un message en fonction du nombre d’exemplaires de chaque ouvrage.
+SELECT Ouvrages.isbn, Ouvrages.titre, CASE COUNT(*)
+WHEN 0 THEN 'Aucun'
+WHEN 1 THEN 'Peu'
+WHEN 2 THEN 'Peu'
+WHEN 3 THEN 'Normal'
+WHEN 4 THEN 'Normal'
+WHEN 5 THEN 'Normal'
+ELSE 'Beaucoup'
+END AS "Nombre exemplaires" -- double quote obligatoire
+FROM Ouvrages, Exemplaires
+WHERE Ouvrages.isbn = Exemplaires.isbn
+GROUP BY Ouvrages.isbn, Ouvrages.titre;
+
+
 --IV) PL/SQL
 
 --1) Mise à jour conditionnelle de l'état des examplaires en fonction du nombre d'emprunts
