@@ -429,26 +429,28 @@ ORDER BY Genres.libelle, Ouvrages.titre;
 --III)SQL avancé
 
 --1)
-
+--Affichage du nombre d'emprunt par ouvrage et par exemplaire 
 SELECT isbn,exemplaire,COUNT(*) AS nombre
 FROM Details
 GROUP BY ROLLUP(isbn, exemplaire);
---solution plus lisible
+--solution plus lisible en utilisant DECODE :
 SELECT isbn, DECODE(GROUPING(exemplaire), 1, 'Tous exemplaires confondus', exemplaire) AS exemplaire, COUNT(*) AS nombre
 FROM Details
 GROUP BY ROLLUP(isbn, exemplaire);
 
 --2)
+--Affichage de la liste des exemplaires n'ayant pas étés empruntés lors des 3 derniers mois
 SELECT *
 FROM Exemplaires E
 WHERE NOT EXISTS (
 	SELECT *
 	FROM Details D
-	WHERE MONTHS_BETWEEN(rendule, SYSDATE) < 3
+	WHERE MONTHS_BETWEEN(SYSDATE, rendule) < 3
 	AND D.isbn=E.isbn
 	AND D.exemplaire=E.numero); 
 
 --3)
+--Affihcage des ouvrages qui n'ont pas d'exemplaires à l'état neuf
 SELECT *
 FROM Ouvrages 
 WHERE isbn NOT IN (
@@ -456,18 +458,21 @@ WHERE isbn NOT IN (
 	FROM Exemplaires
 	WHERE etat='NE'); 
 
---4)
+--4) 
+--Affichage de tous les ouvrages qui possèdent le mot mer dans leurs titre
 SELECT isbn, titre
 FROM Ouvrages 
 WHERE LOWER (titre) LIKE '%mer%';
 
 --5)
+--Affichage de tout les auteurs qui ont la particule de avant leurs nom de famille
 SELECT DISTINCT auteur
 FROM Ouvrages
 --WHERE REGEXP_LIKE(auteur, '^[[:alpha:]]*[[:space:]]de[[:space:]][[:alpha:]]+$'); ==> Ne ressort qu'un seul nom sur les deux attendus
 WHERE auteur LIKE '% de %';
 
---6)
+--6
+--On affiche le public concernés par chaque ouvrage de la bibliothèque
 SELECT isbn, titre, CASE genre
 WHEN 'BD' THEN 'Jeunesse'
 WHEN 'INF' THEN 'Professionnel'
@@ -475,10 +480,11 @@ WHEN 'POL' THEN 'Adulte'
 WHEN 'REC' THEN 'Tous'
 WHEN 'ROM' THEN 'Tous'
 WHEN 'THE' THEN 'Tous'
-END AS "PUBLIC"
+END AS "Public"
 FROM Ouvrages;
 
 --7)
+--Ajout de commentaires de description de chaque tables de la base
 COMMENT ON TABLE Membres
 IS 'Descriptifs des membres. Possède le synonymes Abonnes';
 COMMENT ON TABLE Genres
@@ -493,25 +499,28 @@ COMMENT ON TABLE Details
 IS 'Chaque ligne correspond à un livre emprunté';
 
 --8)
+--Affichage des commentaires associés à chaque tables de la base
 SELECT table_name, comments
 FROM USER_TAB_COMMENTS
 WHERE comments IS NOT NULL;
 
 --9)
-ALTER TABLE Emprunts
-DROP CONSTRAINT fk_emprunts_membres;
-ALTER TABLE Emprunts
-ADD CONSTRAINT fk_emprunts_membres FOREIGN KEY (membre) REFERENCES Membres (numero)
-INITIALLY DEFERRED;
+--On supprime d'abord la contrainte sur la clé etrangère de la table Emprunts
+ALTER TABLE Emprunts DROP CONSTRAINT fk_emprunts_membres;
+--On recrée la contrainte de clé étrangère en rajoutant une verification de cette contrainte uniquement à la fin de la transaction
+ALTER TABLE Emprunts ADD CONSTRAINT fk_emprunts_membres FOREIGN KEY (membre) REFERENCES Membres (numero) INITIALLY DEFERRED;
 
 --10) 
+--Suppression de la table Details
 DROP TABLE Details;
 
 --11)
+--Annulation de la précédente commande
 FLASHBACK TABLE Details TO BEFORE DROP;
 
 
 --13)
+--On affiche un commentaire sur le nombre d'exemplaires pour chaque ouvrages (Aucun, peu, normal, beaucoup).
 SELECT Ouvrages.isbn, Ouvrages.titre, CASE COUNT(*)
 WHEN 0 THEN 'Aucun'
 WHEN 1 THEN 'Peu'
