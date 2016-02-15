@@ -47,11 +47,11 @@ isbn NUMBER(10),
 numero NUMBER(3),
 etat CHAR(5),
 CONSTRAINT pk_exemplaires PRIMARY KEY(isbn, numero),
---Le numero isbn du livre et le numero de l'exemplaire forment à eux deux la clé primaire de la table
+-- Le numero isbn du livre et le numero de l'exemplaire forment à eux deux la clé primaire de la table
 CONSTRAINT fk_exemplaires_ouvrages FOREIGN KEY(isbn) REFERENCES Ouvrages(isbn),
---L'attribut isbn est une clé étrangère qui fait référence à l'attribut isbn dans la table Ouvrages 
+-- L'attribut isbn est une clé étrangère qui fait référence à l'attribut isbn dans la table Ouvrages 
 CONSTRAINT ck_exemplaires_etat CHECK (etat IN('NE', 'BO', 'MO', 'MA')));
---La contrainte ck_exemplaires_etat définie les seules valeurs possibles pour l'attribut etat de la table
+-- La contrainte ck_exemplaires_etat définie les seules valeurs possibles pour l'attribut etat de la table
 
 -- Création de la table Membres
 CREATE TABLE Membres (
@@ -87,11 +87,11 @@ isbn NUMBER(10),
 exemplaire NUMBER(3),
 rendule DATE,
 CONSTRAINT pk_detailsemprunts PRIMARY KEY (emprunt, numero),
---Le numéro d'emprunt ainsi que le numero correspondant a chaque ouvrage d'un même emprunt forment à eux deux la clé primaire de la table
+-- Le numéro d'emprunt ainsi que le numero correspondant a chaque ouvrage d'un même emprunt forment à eux deux la clé primaire de la table
 CONSTRAINT fk_details_emprunts FOREIGN KEY(emprunt) REFERENCES Emprunts(numero),
---Le numéro d'emprunt est un clé étrangère faisant référence au numero d'emprunt dans la table Emprunts
+-- Le numéro d'emprunt est un clé étrangère faisant référence au numero d'emprunt dans la table Emprunts
 CONSTRAINT fk_detailsemprunts_exemplaires FOREIGN KEY (isbn, exemplaire) REFERENCES Exemplaires(isbn, numero));
---Le numéro isbn et le numéro d'exemplaire forment une autre clé étrangère faisant référence à l'identifiant isbn et au numéro d'exemplaire dans la table Exemplaires
+-- Le numéro isbn et le numéro d'exemplaire forment une autre clé étrangère faisant référence à l'identifiant isbn et au numéro d'exemplaire dans la table Exemplaires
 
 -- 2) Création d'une séquence demarrant à 1 avec un pas de 1
 CREATE SEQUENCE seq_membre START WITH 0 INCREMENT BY 1 MINVALUE 0;
@@ -419,20 +419,20 @@ FROM Ouvrages, Genres
 WHERE Genres.code=Ouvrages.genre
 ORDER BY Genres.libelle, Ouvrages.titre;
 
+	------------------------------------------
+
 -- III) SQL avancé
 
---1)
---Affichage du nombre d'emprunt par ouvrage et par exemplaire 
+-- 1) Affichage du nombre d'emprunts par ouvrage et par exemplaire 
 SELECT isbn,exemplaire,COUNT(*) AS nombre
 FROM Details
 GROUP BY ROLLUP(isbn, exemplaire);
---solution plus lisible en utilisant DECODE :
+-- solution plus lisible en utilisant DECODE :
 SELECT isbn, DECODE(GROUPING(exemplaire), 1, 'Tous exemplaires confondus', exemplaire) AS exemplaire, COUNT(*) AS nombre
 FROM Details
 GROUP BY ROLLUP(isbn, exemplaire);
 
---2)
---Affichage de la liste des exemplaires n'ayant pas étés empruntés lors des 3 derniers mois
+-- 2) Affichage de la liste des exemplaires n'ayant pas été empruntés lors des 3 derniers mois
 SELECT *
 FROM Exemplaires E
 WHERE NOT EXISTS (
@@ -442,8 +442,7 @@ WHERE NOT EXISTS (
 	AND D.isbn=E.isbn
 	AND D.exemplaire=E.numero); 
 
---3)
---Affihcage des ouvrages qui n'ont pas d'exemplaires à l'état neuf
+-- 3) Affichage des ouvrages qui n'ont pas d'exemplaire à l'état neuf
 SELECT *
 FROM Ouvrages 
 WHERE isbn NOT IN (
@@ -451,21 +450,18 @@ WHERE isbn NOT IN (
 	FROM Exemplaires
 	WHERE etat='NE'); 
 
---4) 
---Affichage de tous les ouvrages qui possèdent le mot mer dans leurs titre
+-- 4) Affichage de tous les ouvrages qui possèdent le mot 'mer' dans leur titre
 SELECT isbn, titre
 FROM Ouvrages 
 WHERE LOWER (titre) LIKE '%mer%';
 
---5)
---Affichage de tout les auteurs qui ont la particule de avant leurs nom de famille
+-- 5) Affichage de tout les auteurs qui ont la particule 'de' avant leur nom de famille
 SELECT DISTINCT auteur
 FROM Ouvrages
---WHERE REGEXP_LIKE(auteur, '^[[:alpha:]]*[[:space:]]de[[:space:]][[:alpha:]]+$'); ==> Ne ressort qu'un seul nom sur les deux attendus
+-- WHERE REGEXP_LIKE (auteur, '^[[:alpha:]]*[[:space:]]de[[:space:]][[:alpha:]]+$'); -- Ne ressort qu'un seul nom sur les deux attendus
 WHERE auteur LIKE '% de %';
 
---6
---On affiche le public concernés par chaque ouvrage de la bibliothèque
+-- 6) On affiche le public concerné par chaque ouvrage de la bibliothèque
 SELECT isbn, titre, CASE genre
 WHEN 'BD' THEN 'Jeunesse'
 WHEN 'INF' THEN 'Professionnel'
@@ -476,8 +472,7 @@ WHEN 'THE' THEN 'Tous'
 END AS "Public"
 FROM Ouvrages;
 
---7)
---Ajout de commentaires de description de chaque tables de la base
+-- 7) Ajout de commentaires de description de chaque tables de la base
 COMMENT ON TABLE Membres
 IS 'Descriptifs des membres. Possède le synonymes Abonnes';
 COMMENT ON TABLE Genres
@@ -491,29 +486,24 @@ IS 'Fiche d’emprunt de livres, toujours associée à un et un seul membre';
 COMMENT ON TABLE Details
 IS 'Chaque ligne correspond à un livre emprunté';
 
---8)
---Affichage des commentaires associés à chaque tables de la base
+-- 8) Affichage des commentaires associés à chaque table de la base
 SELECT table_name, comments
 FROM USER_TAB_COMMENTS
 WHERE comments IS NOT NULL;
 
---9)
---On supprime d'abord la contrainte sur la clé etrangère de la table Emprunts
+-- 9) Rendre possible cette nouvelle contrainte de fonctionnement
+-- On supprime d'abord la contrainte sur la clé etrangère de la table Emprunts
 ALTER TABLE Emprunts DROP CONSTRAINT fk_emprunts_membres;
---On recrée la contrainte de clé étrangère en rajoutant une verification de cette contrainte uniquement à la fin de la transaction
+-- On crée à nouveau la contrainte de clé étrangère en rajoutant une vérification de cette contrainte uniquement à la fin de la transaction
 ALTER TABLE Emprunts ADD CONSTRAINT fk_emprunts_membres FOREIGN KEY (membre) REFERENCES Membres (numero) INITIALLY DEFERRED;
 
---10) 
---Suppression de la table Details
+-- 10) Suppression de la table Details
 DROP TABLE Details;
 
---11)
---Annulation de la précédente commande
+-- 11) Annulation de la précédente commande
 FLASHBACK TABLE Details TO BEFORE DROP;
 
-
---13)
---On affiche un commentaire sur le nombre d'exemplaires pour chaque ouvrages (Aucun, peu, normal, beaucoup).
+-- 13) On affiche un commentaire sur le nombre d'exemplaires pour chaque ouvrage (Aucun, peu, normal, beaucoup)
 SELECT Ouvrages.isbn, Ouvrages.titre, CASE COUNT(*)
 WHEN 0 THEN 'Aucun'
 WHEN 1 THEN 'Peu'
@@ -527,9 +517,11 @@ FROM Ouvrages, Exemplaires
 WHERE Ouvrages.isbn=Exemplaires.isbn
 GROUP BY Ouvrages.isbn, Ouvrages.titre;
 
---IV) PL/SQL
+	------------------------------------------
 
---1) Mise à jour conditionnelle de l'état des examplaires en fonction du nombre d'emprunts
+-- IV) PL/SQL
+
+-- 1) Mise à jour conditionnelle de l'état des examplaires en fonction du nombre d'emprunts
 
 DECLARE 
 	CURSOR c_Exemplaires IS
@@ -558,18 +550,18 @@ BEGIN
 END;
 /
 
---2) Suppression conditionnelle
+-- 2) Suppression conditionnelle
 
--- étape1 : vérifier que la colonne Membre de la table des Emprunts accepte les valeurs null.
+-- Etape1 : vérifier que la colonne Membre de la table des Emprunts accepte les valeurs null.
 DESC Emprunts;
 
--- étape 2 : dans le cas où la colonne n'accepte pas la valeur null, on doit modifier la définition de la table
+-- Etape 2 : dans le cas où la colonne n'accepte pas la valeur null, on doit modifier la définition de la table
 ALTER TABLE Emprunts MODIFY (membre NUMBER(6) NULL);
 -- RQ: si la colonne autorise deja les valeurs null, alors l'execution du script se termine par une erreur.
 
--- étape 3 : on définit enfin le bloc PL/SQL permettant d'obtenir le résultat souhaité
+-- Etape 3 : on définit enfin le bloc PL/SQL permettant d'obtenir le résultat souhaité
 DECLARE
-	--ADD_MONTHS(i,j) permet de calculer la date de fin en rajoutant j mois à la date i
+	-- ADD_MONTHS(i,j) permet de calculer la date de fin en rajoutant j mois à la date i
 	CURSOR c_Membres IS SELECT * FROM Membres WHERE MONTHS_BETWEEN (SYSDATE, ADD_MONTHS(adhesion, duree)) > 24;
 	v_nombre NUMBER(5);
 
@@ -601,11 +593,11 @@ BEGIN
 END;
 /
 
---3)
+-- 3)
 SET serveroutput ON;
 
 DECLARE
-	--1er curseur pour l'ordre ascendant
+	-- 1er curseur pour l'ordre ascendant
 	CURSOR c_ordre_croissant IS 
 		SELECT E.membre, COUNT(*) 
 		FROM Emprunts E, Details D
@@ -613,7 +605,7 @@ DECLARE
 		GROUP BY E.membre
 		ORDER BY 2 ASC;
 
-	--2ème curseur pour l'ordre descendant
+	-- 2ème curseur pour l'ordre descendant
 	CURSOR c_ordre_decroissant IS
 		SELECT E.membre, COUNT(*)
 		FROM Emprunts E, Details D
@@ -629,7 +621,7 @@ BEGIN
 	DBMS_OUTPUT.PUT_LINE ('Membres ayant emprunte le plus d ouvrages au cours des 10 derniers mois');
 	OPEN c_ordre_croissant;
 
-	--Boucle du 1er au 3ème
+	-- Boucle du 1er au 3ème
 	FOR i IN 1..3 LOOP
 		FETCH c_ordre_croissant INTO v_lecteur;
 		IF c_ordre_croissant%NOTFOUND
@@ -644,7 +636,7 @@ BEGIN
 
 	DBMS_OUTPUT.PUT_LINE('Membres ayant emprunte le moins d ouvrages au cours des 10 derniers mois');
 	OPEN c_ordre_decroissant;
-	--Boucle de 1 à 3
+	-- Boucle de 1 à 3
 	FOR i IN 1..3 LOOP
 		FETCH c_ordre_decroissant INTO v_lecteur;
 		IF c_ordre_decroissant%NOTFOUND
@@ -660,7 +652,7 @@ END;
 /
 
 
---4)
+-- 4)
 
 -- Pour afficher les résultats
 SET serveroutput ON;
@@ -682,7 +674,7 @@ BEGIN
 		EXIT WHEN i>5;
 		FETCH c_Ouvrages INTO v_ouvrage;
 
-		--Sortie de la boucle si le curseur est vide
+		-- Sortie de la boucle si le curseur est vide
 		EXIT WHEN c_Ouvrages%NOTFOUND;
 		DBMS_OUTPUT.PUT_LINE('Numero: '|| i ||' _isbn :' || v_ouvrage.isbn);
 	END LOOP;
@@ -690,10 +682,7 @@ BEGIN
 END;
 /
 
-
-
-
---5)
+-- 5)
 -- en PL/SQL
 SET serveroutput ON;
 
@@ -713,15 +702,15 @@ END;
 -- Même résultat avec une requête SQL -> execution plus rapide
 SELECT numero, nom
 FROM Membres
---ADD_MONTHS(i,j) permet de calculer la date de fin en rajoutant j mois à la date i
+-- ADD_MONTHS(i,j) permet de calculer la date de fin en rajoutant j mois à la date i
 WHERE ADD_MONTHS(adhesion, duree)<=SYSDATE+30;
 
---6)
--- étape 1a : mise à jour de la structure de la table
+-- 6)
+-- Etape 1a : mise à jour de la structure de la table
 ALTER TABLE Exemplaires ADD (
 nombreEmprunts NUMBER(3) DEFAULT 0,
 dateCalculEmprunts DATE DEFAULT SYSDATE);
--- étape 1b : mettre à jour les informations de la table
+-- Etape 1b : mettre à jour les informations de la table
 UPDATE Exemplaires SET dateCalculEmprunts = (
 	SELECT MIN(creele) 
 	FROM Emprunts E, Details D 
@@ -731,7 +720,8 @@ UPDATE Exemplaires SET dateCalculEmprunts = (
 UPDATE Exemplaires SET dateCalculEmprunts = SYSDATE
 WHERE dateCalculEmprunts IS NULL;
 COMMIT;
--- étape 2 : script PL/SQL
+
+-- Etape 2 : script PL/SQL
 DECLARE
 	CURSOR c_Exemplaires IS SELECT * FROM Exemplaires
 	FOR UPDATE OF nombreEmprunts, dateCalculEmprunts;
@@ -764,7 +754,7 @@ BEGIN
 END;
 /
 
---7)
+-- 7)
 DECLARE
 	v_nbre NUMBER(6);
 	v_total NUMBER(6);
@@ -789,7 +779,7 @@ BEGIN
 END;
 /
 
---8)
+-- 8)
 DELETE FROM Membres
 WHERE numero IN (
 	SELECT DISTINCT membre
@@ -798,11 +788,11 @@ WHERE numero IN (
 	--ADD_MONTHS(i,j) permet de calculer la date de fin en rajoutant j mois à la date i
 	HAVING MAX(creele)< ADD_MONTHS(SYSDATE, -36));
 
---9)
--- étape 1 : Modification de la structure de la table
+-- 9)
+-- Etape 1 : Modification de la structure de la table
 ALTER TABLE Membres MODIFY (mobile CHAR(14));
 
--- étape 2 : Mise en forme du numéro de téléphone mobile
+-- Etape 2 : Mise en forme du numéro de téléphone mobile
 DECLARE
 	-- On traite les membres un par un 
 	CURSOR c_Membres IS
@@ -813,7 +803,7 @@ BEGIN
 	FOR v_numero IN c_Membres LOOP
 		IF (INSTR(v_numero.mobile,' ')!=2) THEN
 		-- On construit le nouveau numéro
-			--Utilisation de SUBSTR(i,n) qui va prendre n lettres à la position i
+			-- Utilisation de SUBSTR(i,n) qui va prendre n lettres à la position i
 			v_nouveauMobile:=SUBSTR(v_numero.mobile,1,2)||' '||
 			SUBSTR(v_numero.mobile,3,2)||' '||
 			SUBSTR(v_numero.mobile,5,2)||' '||
@@ -827,13 +817,14 @@ BEGIN
 END;
 /
 
--- étape 3 : Définition et activation de la contrainte d'intégrité
+-- Etape 3 : Définition et activation de la contrainte d'intégrité
 ALTER TABLE Membres ADD constraint ck_membres_mobile2 CHECK (REGEXP_LIKE (mobile, '^06 [[:digit:]]{2} [[:digit:]]{2} [[:digit:]]{2} [[:digit:]]{2}$')) ;
 
+	------------------------------------------
 
 --V) PL/SQL procédures et fonctions
 
---1) Fonction FinValidite
+-- 1) Fonction FinValidite
 CREATE OR REPLACE FUNCTION FinValidite (v_numero IN NUMBER) RETURN DATE IS v_fin DATE;
 BEGIN
 	--ADD_MONTHS(i,j) permet de calculer la date de fin en rajoutant j mois à la date i
@@ -844,10 +835,10 @@ BEGIN
 END;
 /
 
---Test
+-- Test
 select Membres.numero, Membres.nom, FinValidite(Membres.numero) from Membres; 
 
---2) Fonction AdhesionAjour
+-- 2) Fonction AdhesionAjour
 CREATE OR REPLACE FUNCTION AdhesionAjour(v_numero NUMBER) RETURN BOOLEAN AS
 BEGIN 
 	IF (FinValidite(v_numero)>= SYSDATE())
@@ -858,7 +849,7 @@ BEGIN
 END;
 /
 
---Test
+-- Test
 BEGIN
 	FOR i IN (SELECT Membres.numero j, Membres.nom n FROM Membres) LOOP
 		IF (AdhesionAjour(i.j)) THEN
@@ -870,7 +861,7 @@ BEGIN
 END;
 /
 
---3) Procédure RetourExemplaire
+-- 3) Procédure RetourExemplaire
 CREATE OR REPLACE PROCEDURE RetourExemplaire (v_isbn IN NUMBER, v_numero IN NUMBER) AS
 BEGIN
 	UPDATE Details SET rendule=SYSDATE
@@ -879,7 +870,7 @@ BEGIN
 END;
 /
 
---4) Procédure PurgeMembres
+-- 4) Procédure PurgeMembres
 CREATE OR REPLACE PROCEDURE PurgeMembres AS
 CURSOR c_Membres IS SELECT numero FROM Membres WHERE (TRUNC(SYSDATE(), 'YYYY') - TRUNC(ADD_MONTHS(adhesion, duree), 'YYYY'))>3;
 BEGIN 
@@ -895,10 +886,10 @@ BEGIN
 END;
 /
 
---Test
+-- Test
 EXECUTE PurgeMembres;
 
---5) Fonction MesureActivite
+-- 5) Fonction MesureActivite
 CREATE OR REPLACE FUNCTION MesureActivite (v_mois IN NUMBER) RETURN NUMBER IS
 CURSOR c_activite(v_m IN NUMBER) IS
 	SELECT membre, COUNT(*)
@@ -917,7 +908,7 @@ BEGIN
 END;
 /
 
---Test sur 12 mois
+-- Test sur 12 mois
 SELECT numero, nom, prenom
 FROM Membres
 WHERE numero = MesureActivite(12);
@@ -942,7 +933,7 @@ BEGIN
 END;
 /
 
---6) Fonction EmpruntMoyen
+-- 6) Fonction EmpruntMoyen
 CREATE OR REPLACE FUNCTION EmpruntMoyen (v_membre IN NUMBER) RETURN NUMBER IS v_dureeMoyenne NUMBER;
 BEGIN 
 	SELECT TRUNC(AVG(TRUNC(rendule,'DD')-TRUNC(creele,'DD')+1), 2) INTO v_dureeMoyenne
@@ -954,7 +945,7 @@ BEGIN
 END;
 /
 
---test
+-- Test
 DECLARE
 	EmpruntMoyenMembre NUMBER;
 
@@ -972,7 +963,7 @@ END;
 
 
 
---7) Fonction DureeMoyenne
+-- 7) Fonction DureeMoyenne
 CREATE OR REPLACE FUNCTION DureeMoyenne (v_isbn IN NUMBER, v_exemplaire IN NUMBER DEFAULT NULL) RETURN NUMBER IS v_duree NUMBER;
 BEGIN
 	IF (v_exemplaire IS NULL) THEN
@@ -992,7 +983,7 @@ BEGIN
 END;
 /
 
---test
+-- Test
 DECLARE
 	DureeMoyenneEmprunt NUMBER;
 BEGIN
@@ -1007,7 +998,7 @@ BEGIN
 END;
 /
 
---8) Procédure MajEtatExemplaire
+-- 8) Procédure MajEtatExemplaire
 CREATE OR REPLACE PROCEDURE MajEtatExemplaire IS 
 	CURSOR c_Exemplaires IS SELECT * FROM Exemplaires
 		FOR UPDATE OF nombreEmprunts, dateCalculEmprunts;
@@ -1043,9 +1034,9 @@ BEGIN
 	DBMS_SCHEDULER.CREATE_JOB('CalculEtatExemplaire','MajEtatExemplaire', SYSTIMESTAMP, 'systimestamp+14');
 END;
 /
--- insufficient privileges
+-- RQ: insufficient privileges :(
 
---9) Fonction AjouteMembre
+-- 9) Fonction AjouteMembre
 CREATE OR REPLACE FUNCTION AjouteMembre (v_nom IN CHAR, v_prenom IN CHAR, v_adresse IN CHAR, v_mobile IN CHAR, v_adhesion IN DATE, v_duree IN NUMBER) RETURN NUMBER AS v_numero Membres.numero%TYPE;
 BEGIN 
 	INSERT INTO Membres (numero, nom, prenom, adresse, mobile, adhesion, duree)
@@ -1055,7 +1046,7 @@ BEGIN
 END;
 /
 
---test
+-- Test
 DECLARE
 	v_numero Membres.numero%TYPE;
 
@@ -1065,7 +1056,7 @@ BEGIN
 END;
 /
 
---10) Procédure SupprimeExemplaire
+-- 10) Procédure SupprimeExemplaire
 CREATE OR REPLACE PROCEDURE SupprimeExemplaire (v_isbn IN NUMBER, v_numero IN NUMBER) AS
 BEGIN
 	-- On supprime l'exemplaire choisi
@@ -1078,15 +1069,15 @@ EXCEPTION
 END;
 /
 
---test
+-- Test
  EXECUTE SupprimeExemplaire(203440861,3); 
 
---11) Procédure EmpruntExpress
--- étape 1 : recherche de la plus grande valeur attribuée à un numéro d'emprunt
+-- 11) Procédure EmpruntExpress
+-- Etape 1 : recherche de la plus grande valeur attribuée à un numéro d'emprunt
 SELECT MAX(numero) FROM Emprunts;
--- étape 2 : création d'une séquence
+-- Etape 2 : création d'une séquence
 CREATE SEQUENCE seq_emprunts START WITH 20;
--- étape 3 : création de la procédure
+-- Etape 3 : création de la procédure
 CREATE OR REPLACE PROCEDURE EmpruntExpress (v_membre NUMBER, v_isbn NUMBER, v_exemplaire NUMBER) AS v_emprunt Emprunts.numero%TYPE;
 BEGIN
 	INSERT INTO Emprunts (numero, membre, creele) VALUES (seq_emprunts.nextval, v_membre, SYSDATE)
@@ -1095,10 +1086,10 @@ BEGIN
 END;
 /
 
---test
+-- Test
 EXECUTE EmpruntExpress(11,2038704015,1);
 
---12) Création de package
+-- 12) Création de package
 -- a) création de l'entête
 CREATE OR REPLACE PACKAGE Livre AS
 	FUNCTION AdhesionAjour(v_numero NUMBER) RETURN BOOLEAN;
@@ -1121,6 +1112,7 @@ END Livre;
 
 -- b) création du corps
 CREATE OR REPLACE PACKAGE BODY Livre AS
+
 --*****Fonction AdhesionAjour*****
 FUNCTION AdhesionAjour(v_numero NUMBER) RETURN BOOLEAN AS
 BEGIN 
@@ -1212,7 +1204,7 @@ BEGIN
 		UPDATE Exemplaires SET etat='MO' WHERE nombreEmprunts BETWEEN 26 AND 40;
 		UPDATE Exemplaires SET etat='DO' WHERE nombreEmprunts BETWEEN 41 AND 60;
 		UPDATE Exemplaires SET etat='MA' WHERE nombreEmprunts >= 61;
-		-- POur finir on valide les modifications
+		-- Pour finir on valide les modifications
 		COMMIT;
 	END LOOP;
 END;
@@ -1273,11 +1265,11 @@ END;
 END Livre;
 /
 
--------------------------------------------------------------------------------------------
+	------------------------------------------
 
---VI) Déclencheurs de bases de données
+-- VI) Déclencheurs de bases de données
 
---1)
+-- 1) Définition d'un déclencheur : Suppresion des informations relatives à un ouvrage lors de sa suppression
 CREATE TRIGGER after_delete_Exemplaires
 	AFTER DELETE ON Exemplaires
 	FOR EACH ROW 
@@ -1290,7 +1282,7 @@ EXCEPTION
 END;
 /
 
---2)
+-- 2) Définition d'un déclencheur
 CREATE OR REPLACE TRIGGER after_insert_Emprunts
 	AFTER INSERT ON Emprunts
 	FOR EACH ROW
@@ -1298,7 +1290,7 @@ DECLARE
 	v_finValidite DATE;
 BEGIN
 	-- On calcule la date de fin de validité de l'adhésion d'un membre voulant emprunter un exemplaire
-	--ADD_MONTHS(i,j) permet de calculer la date de fin en rajoutant j mois à la date i
+	-- ADD_MONTHS(i,j) permet de calculer la date de fin en rajoutant j mois à la date i
 	SELECT ADD_MONTHS(adhesion, duree) INTO v_finValidite
 	FROM Membres
 	WHERE numero=:new.membre;
@@ -1310,7 +1302,7 @@ BEGIN
 END;
 /
 
---3)
+-- 3) Définition d'un déclencheur
 CREATE OR REPLACE TRIGGER before_update_Emprunts
 	BEFORE UPDATE ON Emprunts
 	FOR EACH ROW
@@ -1321,13 +1313,13 @@ BEGIN
 END;
 /
 
---4)
+-- 4) Définition d'un déclencheur
 CREATE OR REPLACE TRIGGER after_update_Details
 	AFTER UPDATE ON Details
 	FOR EACH ROW
 	WHEN ((old.isbn != new.isbn) OR (old.exemplaire != new.exemplaire))
 BEGIN
-	-- On regarde si l'ancien ISBN est différent du nouveau ou pas
+	-- On regarde si l'ancien isbn est différent du nouveau ou pas
 	IF ( :old.isbn != :new.isbn) THEN
 		RAISE_APPLICATION_ERROR(-20641, 'Il est impossible de changer d''ouvrage');
 	ELSE
@@ -1336,12 +1328,12 @@ BEGIN
 END;
 /
 
---5)
+-- 5) Définition d'un deéclencheur automatique
 CREATE OR REPLACE TRIGGER bef_ins_update_Exemplaires
 	BEFORE INSERT OR UPDATE OF nombreEmprunts ON Exemplaires
 	FOR EACH ROW
 BEGIN
-	--On regarde le nombre d'emprunts en comptant celui là
+	-- On regarde le nombre d'emprunts en comptant celui là
 	IF (:new.nombreEmprunts<=10) THEN :new.etat :='NE';
 	END IF;
 	IF (:new.nombreEmprunts BETWEEN 11 AND 25) THEN :new.etat :='BO';
@@ -1355,7 +1347,7 @@ BEGIN
 END;
 /
 
---6)
+-- 6) Assurer la prise en compte d'un emprunt après suppression d'un détail
 CREATE OR REPLACE TRIGGER after_delete_Details
 	AFTER DELETE ON Details
 	FOR EACH ROW
@@ -1365,7 +1357,7 @@ DECLARE
 	v_creele Emprunts.creele%TYPE;
 	v_dateCalculEmprunts Exemplaires.dateCalculEmprunts%TYPE;
 BEGIN
-	--calcul ne concernant que les éléments les plus récents
+	-- Calcul ne concernant que les éléments les plus récents
 	SELECT creele INTO v_creele FROM Emprunts WHERE numero=:old.emprunt;
 	SELECT dateCalculEmprunts INTO v_dateCalculEmprunts FROM Exemplaires WHERE Exemplaires.isbn=:old.isbn AND Exemplaires.numero=:old.exemplaire;
 	IF(v_dateCalculEmprunts<v_creele) THEN 
@@ -1377,13 +1369,14 @@ BEGIN
 	COMMIT;
 END;
 /
--- Impossible d'effectuer une mise à jour plus complète de la valeur contenue dans la colonne NombreEmprunts car il n'est pas possible de faire une requête SELECT dans le déclencheur
+-- Impossible d'effectuer une mise à jour plus complète de la valeur contenue dans la colonne NombreEmprunts 
+-- car il n'est pas possible de faire une requête SELECT dans le déclencheur
 
---7)
--- étape 1 : Modification de la structure des tables des Emprunts et des Details en y ajoutant une colonne pour conserver le nom de l'utilisateur et une autre pour conserver la date et l'heure de l'opération
+-- 7) Amélioration
+-- Etape 1 : Modification de la structure des tables des Emprunts et des Details en y ajoutant une colonne pour conserver le nom de l'utilisateur et une autre pour conserver la date et l'heure de l'opération
 ALTER TABLE Emprunts ADD(ajoutePar VARCHAR2(80), ajouteLe DATE);
 ALTER TABLE Details ADD(modifiePar VARCHAR2(80), ModifieLe DATE);
--- étape 2a : Définition d'un déclencheur dans la table des Emprunts
+-- Etape 2a : Définition d'un déclencheur dans la table des Emprunts
 CREATE OR REPLACE TRIGGER before_insert_Emprunts
 	BEFORE INSERT ON Emprunts
 	FOR EACH ROW
@@ -1394,7 +1387,7 @@ BEGIN
 	:new.ajouteLe :=SYSDATE();
 END;
 /
--- étape 2b : Définition d'un déclencheur dans la table des Details
+-- Etape 2b : Définition d'un déclencheur dans la table des Details
 CREATE OR REPLACE TRIGGER before_update_Details
 	BEFORE UPDATE ON Details
 	FOR EACH ROW
@@ -1407,8 +1400,10 @@ BEGIN
 END;
 /
 
---8)
+-- 8) Fonction AnalyseActivite
 CREATE OR REPLACE FUNCTION AnalyseActivite(v_employe IN CHAR DEFAULT NULL, v_jour IN DATE DEFAULT NULL) 
+
+-- La valeur de cette fonction est toujours un nombre entier
 RETURN NUMBER IS
 	v_resultatDeparts NUMBER(6) :=0;
 	v_resultatRetours NUMBER(6) :=0;
@@ -1434,12 +1429,12 @@ BEGIN
 		-- On retourne le résultat et on quitte la fonction
 		RETURN v_resultatDeparts+v_resultatRetours;
 	END IF;
-	-- POur le dernier cas restant, le retour est 0
+	-- Pour le dernier cas restant, le retour est 0
 	RETURN 0;
 END;
 /
 
---9)
+-- 9) Interdiction d'un ajout de détails si tous les exemplaires référencés sur une fiche ont été rendus
 CREATE OR REPLACE TRIGGER before_insert_Details
 	BEFORE INSERT ON Details
 	FOR EACH ROW
