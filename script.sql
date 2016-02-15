@@ -1,12 +1,13 @@
---TP BASES DE DONNEES AVANCEES POUR LES BIOLOGISTES
+-- TP BASES DE DONNEES AVANCEES POUR LES BIOLOGISTES
 -- 26 Janvier 2016
 -- Clara Jegousse/Victor Gaborit
 -- Master 2 Bioinformatique
 
---I) Langage de définition de données
---*) Supression des tables
---Si on souhaite recommencer le projet depuis le début il faut supprimer les tables dans le mêmes ordre donnée si dessous 
---si les tables sont supprimées dans le désordre, on aura une erreur du fait des contraintes de clés que l'on a ajouté et les tables ne seront pas supprimées
+	------------------------------------------
+
+-- * Supression des tables
+-- si on souhaite recommencer le projet depuis le début il faut supprimer les tables dans l'ordre donnée si dessous 
+-- si les tables sont supprimées dans le désordre, on aura une erreur du fait des contraintes de clés que l'on a ajouté et les tables ne seront pas supprimées
 DROP TABLE Details;
 DROP TABLE Emprunts;
 DROP TABLE Membres;
@@ -14,13 +15,21 @@ DROP TABLE Exemplaires;
 DROP TABLE Ouvrages;
 DROP TABLE Genres;
 DROP SEQUENCE seq_membre;
---1) Mise en place des tables en utilisant la syntaxe SQL Oracle
+
+	------------------------------------------
+
+-- I) Langage de définition de données
+
+-- 1) Mise en place des tables en utilisant la syntaxe SQL Oracle
+
+-- Création de la table Genres
 CREATE TABLE Genres (
 code CHAR(5),
 libelle VARCHAR2(80) NOT NULL,
 CONSTRAINT pk_genres PRIMARY KEY(code)); 
---L'attribut code sera la clé primaire de cette table
+-- L'attribut code sera la clé primaire de cette table
 
+-- Création de la table Ouvrages
 CREATE TABLE Ouvrages (
 isbn NUMBER(10), 
 titre VARCHAR2(200) NOT NULL,
@@ -28,10 +37,11 @@ auteur VARCHAR2(80),
 genre CHAR(5) NOT NULL, 
 editeur VARCHAR2(80),
 CONSTRAINT pk_ouvrages PRIMARY KEY(isbn),
---Le numero isbn du livre est la clé primaire de la table
- CONSTRAINT fk_ouvrages_genres FOREIGN KEY(genre) REFERENCES Genres(code));
---L'attribut genre est une clé étrangère qui fait référence à l'attribut code dans la table Genres 
+-- Le numero isbn du livre est la clé primaire de la table
+CONSTRAINT fk_ouvrages_genres FOREIGN KEY(genre) REFERENCES Genres(code));
+-- L'attribut genre est une clé étrangère qui fait référence à l'attribut code dans la table Genres 
 
+-- Création de la table Exemplaires
 CREATE TABLE Exemplaires (
 isbn NUMBER(10),
 numero NUMBER(3),
@@ -43,6 +53,7 @@ CONSTRAINT fk_exemplaires_ouvrages FOREIGN KEY(isbn) REFERENCES Ouvrages(isbn),
 CONSTRAINT ck_exemplaires_etat CHECK (etat IN('NE', 'BO', 'MO', 'MA')));
 --La contrainte ck_exemplaires_etat définie les seules valeurs possibles pour l'attribut etat de la table
 
+-- Création de la table Membres
 CREATE TABLE Membres (
 numero NUMBER(6), 
 nom VARCHAR2(80) NOT NULL,
@@ -52,93 +63,93 @@ telephone CHAR(10) NOT NULL,
 adhesion date NOT NULL,
 duree NUMBER(2) NOT NULL,
 CONSTRAINT pk_membres PRIMARY KEY(numero),
---Le numero du membre est unique, il est la clé primaire de la table
+-- Le numero du membre est unique, c'est la clé primaire de la table
 CONSTRAINT ck_membres_duree check (duree>=0));
---L'attribut durée correspond à la durée de l'abonnement c'est forcément une valeur positive qui est vérifiée par la contrainte ck_membres_duree 
+-- L'attribut durée correspond à la durée de l'abonnement c'est forcément une valeur positive qui est vérifiée par la contrainte ck_membres_duree 
 
+-- Création de la table Emprunts
 CREATE TABLE Emprunts (
 numero NUMBER(10), 
 membre NUMBER(6),
 creele DATE DEFAULT SYSDATE,
---La valeur par défault de l'attribut creele est la date au moment de l'emprunt
+-- La valeur par défault de l'attribut creele est la date au moment de l'emprunt
 CONSTRAINT pk_emprunts PRIMARY KEY(numero),
---Le numero d'emprunt sera unique, il est la clé primaire de la table
+-- Le numero d'emprunt sera unique, c'est la clé primaire de la table
 CONSTRAINT fk_emprunts_membres FOREIGN KEY(membre) REFERENCES Membres(numero));
---L'attribut membre est une clé étrangère fesant référence à l'attribut numero dans la table Membres
+-- L'attribut membre est une clé étrangère faisant référence à l'attribut numero dans la table Membres
 
+-- Création de la table DetailsEmprunts
 CREATE TABLE DetailsEmprunts (
 emprunt NUMBER(10), 
 numero NUMBER(3),
---Si le membre emprunte plusieurs ouvrages lors d'un même emprunt, on pourras les différencier grâce à cet attribut
+-- Si le membre emprunte plusieurs ouvrages lors d'un même emprunt, on peut les différencier grâce à cet attribut
 isbn NUMBER(10),
 exemplaire NUMBER(3),
 rendule DATE,
 CONSTRAINT pk_detailsemprunts PRIMARY KEY (emprunt, numero),
---Le numero d'emprunt ainsi que le numero correspondant a chaque ouvrage d'un même emprunt forment à eux deux la clé primaire de la table
+--Le numéro d'emprunt ainsi que le numero correspondant a chaque ouvrage d'un même emprunt forment à eux deux la clé primaire de la table
 CONSTRAINT fk_details_emprunts FOREIGN KEY(emprunt) REFERENCES Emprunts(numero),
---Le numero d'emprunt est un clé étrangère fesant référence au numero d'emprunt dans la table Emprunts
+--Le numéro d'emprunt est un clé étrangère faisant référence au numero d'emprunt dans la table Emprunts
 CONSTRAINT fk_detailsemprunts_exemplaires FOREIGN KEY (isbn, exemplaire) REFERENCES Exemplaires(isbn, numero));
---Le numero isbn et le numero d'exemplaire forment une autre clé étrangère fesant référence a l'identifiant isbn et le numero d'exemplaire dans la table Exemplaires
+--Le numéro isbn et le numéro d'exemplaire forment une autre clé étrangère faisant référence à l'identifiant isbn et au numéro d'exemplaire dans la table Exemplaires
 
---2)
---Création d'une séquence demarrant à 1 avec un pas de 1
+-- 2) Création d'une séquence demarrant à 1 avec un pas de 1
 CREATE SEQUENCE seq_membre START WITH 0 INCREMENT BY 1 MINVALUE 0;
 
-
---3) 
---Ajout d'une nouvelle contraite qui va vérifier que chaque ligne nom, prenom et telephone sera unique
+-- 3) Ajout d'une nouvelle contrainte qui vérifie que chaque ligne nom, prenom et telephone est unique
 ALTER TABLE Membres ADD CONSTRAINT ck_uniq_membres UNIQUE (nom, prenom, telephone);
 
---4)
---Ajout de l'attribut mobile dans la table Membres pour récupérer le numero de téléphone portable 
+-- 4) Ajout de l'attribut mobile dans la table Membres pour récupérer le numero de téléphone portable 
 ALTER TABLE Membres ADD mobile CHAR(10);
---Ajout d'une contrainte qui va vérifier que le numéro pour cet attribut est bien celui d'un portable (commencant par 06)
+-- Ajout d'une contrainte qui va vérifier que le numéro pour cet attribut est bien celui d'un portable (commencant par 06)
 ALTER TABLE Membres ADD CONSTRAINT ck_membres_mobile CHECK (mobile LIKE '06%');
 
---5)
---On doit d'abord enlever la contrainte d'unicité déclarée en question 3)
+-- 5) Suppression de la colonne contenant le numéro de téléphone fixe dans la table Membres
+-- On doit d'abord enlever la contrainte d'unicité déclarée à la question 3)
 ALTER TABLE Membres DROP CONSTRAINT ck_uniq_membres;
 --On passe l'attribut telephone comme inutilisé
 ALTER TABLE Membres SET UNUSED (telephone);
 --On supprime de la table Membres toutes les colonnes inutilisées
 ALTER TABLE Membres DROP UNUSED COLUMNS;
---On recrée notre contrainte d'unicité avec non plus l'attribut téléphone mais l'attribut mobile
+--On crée à nouveau la contrainte d'unicité avec, non plus l'attribut téléphone, mais l'attribut mobile
 ALTER TABLE Membres ADD CONSTRAINT ck_uniq_membres UNIQUE (nom, prenom, mobile);
 
---6) 
---Création des index de chaque table pour faciliter les jointures sur les clés étrangères
+-- 6) Création des index de chaque table pour faciliter les jointures sur les clés étrangères
 CREATE index idx_ouvrages_genre ON Ouvrages(genre);
 CREATE index idx_exemplaires_isbn ON Exemplaires(isbn);
 CREATE index idx_emprunts_membre ON Emprunts(membre);
 CREATE index idx_details_emprunt ON DetailsEmprunts(emprunt);
 CREATE index idx_details_exemplaire ON DetailsEmprunts(isbn, exemplaire);
 
---7)
---On élimine d'abord la contrainte sur la clé étrangère courante de la table DetailsEmprunts
+-- 7) Suppression de toutes les lignes précédentes dans la table DetailsEmprunts qui font référence à la table Emprunts
+-- On élimine d'abord la contrainte sur la clé étrangère courante de la table DetailsEmprunts
 ALTER TABLE DetailsEmprunts DROP CONSTRAINT fk_details_emprunts;
---On rajoute cette même contrainte en précisant que la supression d'une ligne se fera en cascade c'est a dire que toute les lignes correspondant à un emprunt seront effacées
+--On rajoute cette même contrainte en précisant que la supression d'une ligne se fait en cascade,
+-- c'est a dire que toute les lignes correspondant à un emprunt sont effacées
 ALTER TABLE DetailsEmprunts ADD CONSTRAINT fk_details_emprunts FOREIGN KEY (emprunt) REFERENCES Emprunts(numero) ON DELETE CASCADE;
 
---8) 
---On précise que la valeur Neuf est la valeur par défault de l'attribut etat dans la table Exemplaires (lorsque l'on rajouteras des ouvrages, si on ne précise rien pour cet attribut, il seront automatiquement mis à neuf
+--8) Modifiez la table Exemplaires 
+-- On précise que la valeur Neuf est la valeur par défault de l'attribut etat dans la table Exemplaires 
 ALTER TABLE Exemplaires MODIFY (etat CHAR(2) DEFAULT 'NE');
+-- lorsque l'on rajouteras des ouvrages, si on ne précise rien pour cet attribut, il seront automatiquement mis à neuf
 
---9)
---Création d'un synonyme Abonnes pour la table Membres ainsi elle pourra être appelée des deux facons
+--9) Création d'un synonyme Abonnes pour la table Membres
+-- ainsi elle peut être appelée des deux facons
 CREATE SYNONYM Abonnes FOR Membres;
 
---Cette commande ne fonctionne pas sur les ordinateurs de la fac car on ne possède pas les bons privilèges
+-- NB: Cette commande ne fonctionne pas sur les ordinateurs de la faculté car on ne possède pas les bons privilèges
 
---10)
---On renomme la table DetailsEmprunts
+-- 10) Renommage de table DetailsEmprunts
+-- Le nouveau nom de la table est Details
 RENAME DetailsEmprunts TO Details;
 
---II) Langage de Manipulation de Données
+	------------------------------------------
 
---1) 
---On insert dans les différentes tables les valeurs :
+-- II) Langage de Manipulation de Données
 
--- Genres :
+--1) Insertion de valeurs :
+
+-- Dans la table Genres
 INSERT INTO Genres(code, libelle) VALUES ('REC', 'Recit');
 INSERT INTO Genres(code, libelle) VALUES ('POL', 'Policier');
 INSERT INTO Genres(code, libelle) VALUES ('BD', 'Bande Dessinee');
@@ -146,10 +157,10 @@ INSERT INTO Genres(code, libelle) VALUES ('INF', 'Informatique');
 INSERT INTO Genres(code, libelle) VALUES ('THE', 'Theatre');
 INSERT INTO Genres(code, libelle) VALUES ('ROM', 'Roman');
 
---Vérification de la table
+-- Vérification de la table
 SELECT * FROM Genres;
 
--- Ouvrages :
+-- Dans la table Ouvrages
 INSERT INTO Ouvrages (isbn, titre, auteur, genre, editeur) VALUES (2203314168, 'LEFRANC-L''ultimatum', 'Martin, Carin', 'BD', 'Casterman');
 INSERT INTO Ouvrages (isbn, titre, auteur, genre, editeur) VALUES (2746021285, 'HTML entrainez-vous pour maitriser le code source', 'Luc Van Lancker', 'INF', 'ENI');
 INSERT INTO Ouvrages (isbn, titre, auteur, genre, editeur) VALUES (2746026090, 'Oracle 10g SQL, PL/SQL, SQL*Plus', 'J.Gabillaud', 'INF', 'ENI');
@@ -164,27 +175,23 @@ INSERT INTO Ouvrages (isbn, titre, auteur, genre, editeur) VALUES (2020549522, '
 INSERT INTO Ouvrages (isbn, titre, auteur, genre, editeur) VALUES (2253006327, 'Vingt mille lieues sous les mers', 'Jules Verne', 'ROM', 'LGF');
 INSERT INTO Ouvrages (isbn, titre, auteur, genre, editeur) VALUES (2038704015, 'De la terre a la lune', 'Jules Verne', 'ROM', 'Larousse');
 
---Vérification de la table
+-- Vérification de la table
 SELECT * FROM Ouvrages;
 
---Exemplaires :
--- étape1
---Pour tous les ouvrages, on crée deux exemplaires, un en bon etat et un autre en moyen
+-- Dans la table Exemplaires
+-- Etape1 : Pour tous les ouvrages, on crée deux exemplaires, un en bon etat et un autre en moyen
 INSERT INTO Exemplaires (isbn, numero, etat) SELECT isbn, 1, 'BO' FROM Ouvrages;
 INSERT INTO Exemplaires (isbn, numero, etat) SELECT isbn, 2, 'MO' FROM Ouvrages;
--- étape2
---On supprime pour l'ouvrage correspondant au numero 2746021285 l'exemplaire 2 car on ne dispose que d'un seul exemplaire pour cet ouvrage
+-- Etape2 : On supprime pour l'ouvrage correspondant au numero 2746021285 l'exemplaire 2 car on ne dispose que d'un seul exemplaire pour cet ouvrage
 DELETE FROM Exemplaires WHERE isbn=2746021285 and numero=2;
--- étape3
---On modifie pour l'etat des exemplaires du livre numero 2203314168 (inversion des etats)
+-- Etape3 : On modifie pour l'etat des exemplaires du livre numero 2203314168 (inversion des etats)
 UPDATE Exemplaires SET etat='MO' WHERE isbn=2203314168 AND numero=1;
 UPDATE Exemplaires SET etat='BO' WHERE isbn=2203314168 AND numero=2;
---On rajoute un exemplaire en etat neuf pour le livre numero 2203314168
+-- On rajoute un exemplaire en etat neuf pour le livre numero 2203314168
 INSERT INTO Exemplaires (isbn, numero, etat) VALUES (2203314168, 3, 'NE');
 
---2)
---Remplissage de la table Membre
---On utilise la séquence crée en I-2) pour remplir l'attribut numero
+-- 2) Remplissage de la table Membre
+-- On utilise la séquence crée en I-2) pour remplir l'attribut numero
 INSERT INTO Membres (numero, nom, prenom, adresse, mobile, adhesion, duree) VALUES (seq_membre.nextval, 'ALBERT', 'Anne', '13 rue des alpes', '0601020304', SYSDATE-60, 1);
 INSERT INTO Membres (numero, nom, prenom, adresse, mobile, adhesion, duree) VALUES (seq_membre.nextval, 'BERNAUD', 'Barnabe', '6 rue des becasses', '0602030105', SYSDATE-10, 3);
 INSERT INTO Membres (numero, nom, prenom, adresse, mobile, adhesion, duree) VALUES (seq_membre.nextval, 'CUVARD', 'Camille', '52 rue des cerisiers', '0602010509', SYSDATE-100, 6);
@@ -196,8 +203,9 @@ INSERT INTO Membres (numero, nom, prenom, adresse, mobile, adhesion, duree) VALU
 INSERT INTO Membres (numero, nom, prenom, adresse, mobile, adhesion, duree) VALUES (seq_membre.nextval, 'INGRAND', 'Irene', '54 rue des iris', '0605020409', SYSDATE-50, 12);
 INSERT INTO Membres (numero, nom, prenom, adresse, mobile, adhesion, duree) VALUES (seq_membre.nextval, 'JUSTE', 'Julien', '5 place des Jacobins', '0603069876', SYSDATE-100, 6);
 
---3)
---Remplissage de la table Emprunts : 
+-- 3) Remplissage
+
+-- De la table Emprunts : 
 INSERT INTO Emprunts (numero, membre, creele) VALUES (1, 1, SYSDATE-200);
 INSERT INTO Emprunts (numero, membre, creele) VALUES (2, 3, SYSDATE-190);
 INSERT INTO Emprunts (numero, membre, creele) VALUES (3, 4, SYSDATE-180);
@@ -219,7 +227,7 @@ INSERT INTO Emprunts (numero, membre, creele) VALUES (18, 5, SYSDATE-30);
 INSERT INTO Emprunts (numero, membre, creele) VALUES (19, 4, SYSDATE-20);
 INSERT INTO Emprunts (numero, membre, creele) VALUES (20, 1, SYSDATE-10);
 
---Remplissage de la table Details :
+-- De la table Details :
 INSERT INTO Details (emprunt, numero, isbn, exemplaire, rendule) VALUES (1, 1, 2038704015, 1, SYSDATE-195);
 INSERT INTO Details (emprunt, numero, isbn, exemplaire, rendule) VALUES (1, 2, 2070367177, 2, SYSDATE-190);
 INSERT INTO Details (emprunt, numero, isbn, exemplaire, rendule) VALUES (2, 1, 2080720872, 1, SYSDATE-180);
@@ -251,8 +259,7 @@ INSERT INTO Details (emprunt, numero, isbn, exemplaire, rendule) VALUES (19, 1, 
 INSERT INTO Details (emprunt, numero, isbn, exemplaire, rendule) VALUES (20, 1, 2266091611, 1, DEFAULT);
 INSERT INTO Details (emprunt, numero, isbn, exemplaire, rendule) VALUES (20, 2, 2253010219, 1, DEFAULT);
 
---4) 
---Consultation des données des tables
+-- 4) Consultation des données des tables
 SELECT * FROM Genres;
 SELECT * FROM Ouvrages;
 SELECT * FROM Exemplaires;
@@ -260,21 +267,19 @@ SELECT * FROM Membres;
 SELECT * FROM Emprunts;
 SELECT * FROM Details;
 
---5)
---Activation de l'historique des mouvements sur les tables Membres et Details
+-- 5) Activation de l'historique des mouvements sur les tables Membres et Details
 ALTER TABLE Membres ENABLE ROW MOVEMENT;
 ALTER TABLE Details ENABLE ROW MOVEMENT;
 
---6)
---On ajoute par default la valeur EC pour l'attribut etat de la table Emprunts qui signifie que l'emprunt est en cours
+-- 6) Ajout d’une colonne 
+-- On ajoute par défault la valeur EC pour l'attribut etat de la table Emprunts qui signifie que l'emprunt est en cours
 ALTER TABLE Emprunts ADD (etat CHAR(2) DEFAULT 'EC');
---On ajoute une contrainte qui n'autorise que les valeurs EC ou RE (pour Rendu) pour l'attribut etat de la table Emprunts
+-- On ajoute une contrainte qui n'autorise que les valeurs EC ou RE (pour Rendu) pour l'attribut etat de la table Emprunts
 ALTER TABLE Emprunts ADD CONSTRAINT ck_emprunts_etat CHECK (etat IN ('EC', 'RE'));
---On met à jour l'attribut etat avec la valeur RE pour tous les emprunts qui ont une date de retour (rendule different de NULL)
+-- On met à jour l'attribut etat avec la valeur RE pour tous les emprunts qui ont une date de retour (rendule différent de NULL)
 UPDATE Emprunts SET etat='RE' WHERE etat='EC' AND numero NOT IN (SELECT emprunt FROM Details WHERE rendule IS NULL);
 
---7)
---Mise à jour de la table Details
+-- 7) Mise à jour conditionnelle de la table Details
 INSERT INTO Details (emprunt, numero, isbn, exemplaire, rendule) VALUES (7, 2, 2038704015, 1, SYSDATE-136);
 INSERT INTO Details (emprunt, numero, isbn, exemplaire, rendule) VALUES (8, 2, 2038704015, 1, SYSDATE-127);
 INSERT INTO Details (emprunt, numero, isbn, exemplaire, rendule) VALUES (11, 2, 2038704015, 1, SYSDATE-95);
@@ -285,46 +290,44 @@ INSERT INTO Details (emprunt, numero, isbn, exemplaire, rendule) VALUES (18, 2, 
 INSERT INTO Details (emprunt, numero, isbn, exemplaire, rendule) VALUES (19, 2, 2038704015, 1, SYSDATE-13);
 INSERT INTO Details (emprunt, numero, isbn, exemplaire, rendule) VALUES (20, 3, 2038704015, 1, SYSDATE-3);
 
---On réinitialise l'etat de l'exemplaire 1 du livre numero 2038704015
+-- On réinitialise l'état de l'exemplaire 1 du livre numero 2038704015
 UPDATE Exemplaires SET etat='NE' WHERE isbn=2038704015 AND numero=1;
 
--- étape1
---Creéation d'une table temporaire qui va permettre de compter le nombre de locations de chaques exemplaires
+-- Etape 1 : Création d'une table temporaire qui va permettre de compter le nombre de locations de chaque exemplaire
 CREATE TABLE tempoExemplaires AS SELECT isbn, exemplaire, COUNT(*) AS locations 
 FROM Details
 GROUP BY isbn, exemplaire;
--- étape2
---On met à jour l'etat des exemplaires
+
+-- Etape 2 : On met à jour l'état des exemplaires
 MERGE INTO Exemplaires E
 USING (SELECT isbn, exemplaire, locations FROM tempoExemplaires) T 
 ON (T.isbn=E.isbn AND T.exemplaire=E.numero)
 WHEN MATCHED THEN
---Si les exemplaires ont étés loués entre 11 et 25 fois on les mets à BO (Bon)
+-- Si les exemplaires ont été loués entre 11 et 25 fois on les met à BO (Bon)
 UPDATE SET etat='BO' WHERE T.locations BETWEEN 11 AND 25
---Si ils ont étés loués plus de 60 fois, on les supprimes
+-- S'ils ont été loués plus de 60 fois, on les supprime
 DELETE WHERE T.locations>60;
---Si on souhaite plutot marquer leurs état comme mauvais : 
---UPDATE SET etat='MA' WHERE T.locations>60;
--- étape3 
---On supprime la table temporaire
+-- Si on souhaite plutôt marquer leur état comme mauvais : 
+-- UPDATE SET etat='MA' WHERE T.locations>60;
+
+-- Etape 3 : On supprime la table temporaire
 DROP TABLE tempoExemplaires;
 
---8) 
---Ajout de valeur test pour la suppression des exemplaires en mauvais etat
+-- 8)  Suppression de tous les exemplaires dont l’état est mauvais
+-- Ajout de valeur test pour la suppression des exemplaires en mauvais état
 INSERT INTO Exemplaires (isbn, numero, etat) VALUES (2203314168, 4, 'MA');
 INSERT INTO Exemplaires (isbn, numero, etat) VALUES (2746021285, 3, 'MA');
---On supprime les exemplaires dont l'etat est Mauvais (si on a choisi de les noter MA sans les supprimer à la question précédente)
+-- On supprime les exemplaires dont l'état est Mauvais (si on a choisi de les noter MA sans les supprimer à la question précédente)
 DELETE FROM Exemplaires WHERE etat='MA';
 
---9) 
---On etablit la liste des ouvrages de la bibliothèque
+-- 9) Liste des ouvrages de la bibliothèque
 SELECT * FROM Ouvrages;
---Si on ne veut que les titres des ouvrages :
---SELECT titre FROM Ouvrages;
 
+-- Si on ne veut que les titres des ouvrages :
+-- SELECT titre FROM Ouvrages;
 
---10) 
---On affiche les membres qui ont emprunté un ouvrage depuis plus de deux semaines et le titre de l'ouvrage (On ne regarde que les emprunts qui n'ont pas étés rendu)
+-- 10)  On affiche les membres qui ont emprunté un ouvrage depuis plus de 2 semaines et le titre de l'ouvrage 
+-- (On ne regarde que les emprunts qui n'ont pas étés rendu)
 SELECT Membres.*, Ouvrages.titre
 FROM Membres, Emprunts, Details, Ouvrages
 WHERE Emprunts.membre=Membres.numero
@@ -333,28 +336,24 @@ AND TRUNC(SYSDATE, 'WW')-TRUNC(creele, 'WW') > 2
 AND Details.isbn=Ouvrages.isbn
 AND Details.rendule IS NULL;
 
---11)
---On affiche le nombre d'ouvrages par Genre
+-- 11) On affiche le nombre d'ouvrages par Genre
 SELECT genre, COUNT(*) as nombre
 FROM Exemplaires, Ouvrages
 WHERE Ouvrages.isbn=Exemplaires.isbn
 GROUP BY genre;
 
---12)
---On affiche la durée moyenne d'un emprunt
+-- 12) On affiche la durée moyenne d'un emprunt
 SELECT AVG(rendule-creele) AS "Duree Moyenne"
 FROM Emprunts, Details
 WHERE Emprunts.numero=Details.emprunt AND rendule IS NOT NULL;
 
---13) 
---On affiche la durée moyenne d'un emprunt selon le genre de l'ouvrage
+-- 13) On affiche la durée moyenne d'un emprunt selon le genre de l'ouvrage
 SELECT genre, AVG(rendule-creele) AS "Duree Moyenne"
 FROM Emprunts, Details, Ouvrages
 WHERE Emprunts.numero=Details.emprunt AND Details.isbn=Ouvrages.isbn AND rendule IS NOT NULL
 GROUP BY genre;
 
---14) 
---On affiche les ouvrages loués plus de 10 fois au cours des 12 derniers mois
+-- 14) On affiche les ouvrages loués plus de 10 fois au cours des 12 derniers mois
 SELECT Exemplaires.isbn
 FROM Emprunts, Details, Exemplaires
 WHERE Details.exemplaire=Exemplaires.numero
@@ -364,14 +363,12 @@ AND MONTHS_BETWEEN (SYSDATE, Emprunts.creele) <= 12
 GROUP BY Exemplaires.isbn
 HAVING COUNT(*) > 10;
 
---15) 
---On affiche les ouvrages avec tous les numero d'exemplaires présents dans la base
+-- 15) On affiche les ouvrages avec tous les numero d'exemplaires présents dans la base
 SELECT Ouvrages.*, Exemplaires.numero
 FROM Ouvrages, Exemplaires
 WHERE Ouvrages.isbn=Exemplaires.isbn(+);
 
---16) 
---Création d'une vue qui permet de connaitre le nombre d'ouvrages emprunté par chaque membre et donc de connaitre les ouvrages non restitués
+-- 16) Création d'une vue qui permet de connaitre le nombre d'ouvrages emprunté par chaque membre et donc de connaitre les ouvrages non restitués
 CREATE OR REPLACE VIEW OuvragesEmpruntes AS
 SELECT Emprunts.membre, COUNT(*) AS nombreEmprunts
 FROM Emprunts, Details
@@ -379,54 +376,50 @@ WHERE Emprunts.numero=Details.emprunt
 AND Details.rendule IS NULL
 GROUP BY Emprunts.membre;
 
---Cette commande ne fonctionne pas sur les ordinateurs de la fac car on ne possède pas les bons privilèges
+-- Cette commande ne fonctionne pas sur les ordinateurs de la faculté car on ne possède pas les bons privilèges
 
---17) 
---On crée une vue qui permet de connaitre le nombre d'emprunts par ouvrage
+-- 17) On crée une vue qui permet de connaître le nombre d'emprunts par ouvrage
 CREATE OR REPLACE VIEW NombreEmpruntsParOuvrage AS 
 SELECT isbn, COUNT(*) AS nombreEmprunts
 FROM Details
 GROUP BY isbn;
---NB: Une interrogation sur cette vue en utilisant la clause ORDER BY permettra d'afficher les ouvrages par ordre décroissant du nombre de locations
---Cette commande ne fonctionne pas sur les ordinateurs de la fac car on ne possède pas les bons privilèges
+-- NB: Une interrogation sur cette vue en utilisant la clause ORDER BY permettra d'afficher les ouvrages par ordre décroissant du nombre de locations
+-- Cette commande ne fonctionne pas sur les ordinateurs de la fac car on ne possède pas les bons privilèges
 
---18) 
---On affiche les membres par ordre alphabétique
+-- 18) On affiche les membres par ordre alphabétique
 SELECT * FROM Membres ORDER BY nom, prenom;
 
---19)
---Création de la table temporaire globale
+-- 19) Création de la table temporaire globale
 CREATE GLOBAL TEMPORARY TABLE tempoGlobaleEmprunts (
 isbn CHAR(10),
 exemplaire NUMBER(3),
 nombreEmpruntsExemplaire NUMBER(10),
 nombreEmpruntsOuvrage NUMBER(10)) 
 ON COMMIT PRESERVE ROWS;
---Ajout d'informations pour chaque exemplaire
+-- Ajout d'informations pour chaque exemplaire
 INSERT INTO tempoGlobaleEmprunts (
 isbn, exemplaire, nombreEmpruntsExemplaire)
 SELECT isbn, numero, COUNT(*)
 FROM Details
 GROUP BY isbn, numero;
---Ajout d'informations pour chaque ouvrage
+-- Ajout d'informations pour chaque ouvrage
 UPDATE tempoGlobaleEmprunts
 SET nombreEmpruntsOuvrage= (SELECT COUNT(*) FROM Details WHERE Details.isbn=tempoGlobaleEmprunts.isbn);
---Terminaison de la transaction 
+-- Terminaison de la transaction 
 COMMIT;
---Suppression des informations présentes dans la table
+-- Suppression des informations présentes dans la table
 TRUNCATE TABLE tempoGlobaleEmprunts;
---DELETE FROM tempoGlobaleEmprunts; cette commande ne permet pas de supprimer la table temporaire par la suite
---Supprimer la table
+-- DELETE FROM tempoGlobaleEmprunts; -- cette commande ne permet pas de supprimer la table temporaire par la suite
+-- Supprimer la table
 DROP TABLE tempoGlobaleEmprunts;
 
---20) 
---On affiche la liste des genres avec pour chaque genres, les ouvrages correspondant
+-- 20) On affiche la liste des genres avec pour chaque genre, les ouvrages correspondant
 SELECT Genres.libelle, Ouvrages.titre
 FROM Ouvrages, Genres
 WHERE Genres.code=Ouvrages.genre
 ORDER BY Genres.libelle, Ouvrages.titre;
 
---III)SQL avancé
+-- III) SQL avancé
 
 --1)
 --Affichage du nombre d'emprunt par ouvrage et par exemplaire 
