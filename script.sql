@@ -527,7 +527,7 @@ DECLARE
 	CURSOR c_Exemplaires IS
 		SELECT * FROM Exemplaires FOR UPDATE OF etat;
 	v_etat Exemplaires.etat%TYPE;
-	v_nbre number (3);
+	v_nbre NUMBER(3);
 BEGIN 
 	FOR v_exemplaire IN c_Exemplaires LOOP
 		SELECT COUNT(*) INTO v_nbre
@@ -593,7 +593,7 @@ BEGIN
 END;
 /
 
--- 3)
+-- 3) Emprunts des 10 derniers mois
 SET serveroutput ON;
 
 DECLARE
