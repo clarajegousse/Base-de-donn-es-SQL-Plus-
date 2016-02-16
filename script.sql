@@ -554,6 +554,8 @@ END;
 
 -- Etape1 : vérifier que la colonne Membre de la table des Emprunts accepte les valeurs null.
 DESC Emprunts;
+-- Si elle n'accepte pas la valeur NULL on fait la modification suivante:
+-- ALTER TABLE Emprunts MODIFY (membre NUMBER(6) NULL);
 
 -- Etape 2 : dans le cas où la colonne n'accepte pas la valeur null, on doit modifier la définition de la table
 ALTER TABLE Emprunts MODIFY (membre NUMBER(6) NULL);
